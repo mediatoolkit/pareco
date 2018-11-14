@@ -1,4 +1,4 @@
-# Pareco
+# Pareco [![Build Status](https://travis-ci.org/mediatoolkit/pareco.svg?branch=master)](https://travis-ci.org/mediatoolkit/pareco)
 
 Pareco is utility for remote data synchronization (**pa**rallel **re**mote **co**py).
 
