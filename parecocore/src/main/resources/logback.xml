@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration debug="false">
+    <logger name="com.mediatoolkit.pareco" level="TRACE"/>
+    <logger name="org.springframework" level="WARN"/>
+
+    <jmxConfigurator />
+    <property scope="context" name="COLORIZER_COLORS" value="boldred@,boldyellow@,gray@,cyan@,white@" />
+    <conversionRule conversionWord="colorize" converterClass="org.tuxdude.logback.extensions.LogColorizer" />
+    <conversionRule conversionWord="clr" converterClass="org.springframework.boot.logging.logback.ColorConverter" />
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yy-MM-dd HH:mm:ss.SSS} [%thread] %colorize(%level) [%clr(%.30logger{30}){magenta}] %colorize(%m%n)</pattern>
+        </encoder>
+    </appender>
+    <root level="INFO">
+        <appender-ref ref="STDOUT" />
+    </root>
+
+</configuration>
