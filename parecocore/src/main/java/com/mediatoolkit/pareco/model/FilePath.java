@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
+ * This is a relative path representation of file or directory.
+ *
  * @author Antonio Tomac, <antonio.tomac@mediatoolkit.com>
  * @since 25/10/2018
  */

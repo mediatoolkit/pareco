@@ -10,6 +10,15 @@ import org.springframework.stereotype.Component;
 @Component
 public class PathOverlapAnalyzer {
 
+	/**
+	 * Paths are overlapping if any file can be child of {@code path1} and {@code path2}
+	 * at the same time. This will happen if and only if one path is parent to the other
+	 * or if they are equal.
+	 *
+	 * @param path1
+	 * @param path2
+	 * @return true if paths are overlapping, false otherwise
+	 */
 	public boolean pathsDoOverlap(
 		String path1, String path2
 	) {
