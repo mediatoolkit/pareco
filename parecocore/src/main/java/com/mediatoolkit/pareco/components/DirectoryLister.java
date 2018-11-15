@@ -19,6 +19,19 @@ import org.springframework.stereotype.Component;
 @Component
 public class DirectoryLister {
 
+	/**
+	 * Scan contents of given {@code rootDirectory} to recursively find all matching files and directories.
+	 * Only directories and regular files will be selected. (symlinks and named pipes will not)
+	 *
+	 * @param rootDirectory as source of files and directories
+	 * @param filter to use for specific inclusion/exclusion of files and/or directories. If some directory is
+	 *               explicitly included then all of its child files and directories will be included (regardless
+	 *               if some sub file/dire is excluded). If some directory is excluded then all of its contents will
+	 *               be excluded too.
+	 * @return a list of {@link FileEntry}-es which represent all files and folders found
+	 * @throws IOException if some error occurs such as read permissions, external deletion, ...
+	 * @throws NotDirectoryException if {@code rootDirectory} does not exist or it is not a directory
+	 */
 	public List<FileEntry> listFiles(String rootDirectory, FileFilter filter) throws IOException {
 		File root = new File(rootDirectory);
 		if (!root.exists()) {
