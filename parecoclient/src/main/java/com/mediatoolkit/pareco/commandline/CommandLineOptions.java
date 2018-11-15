@@ -58,7 +58,7 @@ public class CommandLineOptions {
 
 	@Parameter(
 		names = {"-del", "--deleteUnexpected"},
-		description = "If set, all unexpected files and directories on destination will be deleted"
+		description = "If set, all unexpected files and directories on destination will be deleted. Warning: double check to specify correct local and remote dir"
 	)
 	private boolean deleteUnexpected = false;
 

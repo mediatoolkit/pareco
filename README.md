@@ -145,7 +145,10 @@ connections, large otherwise.
 
 #### Deletion of unexpected files
 
-Automatic deletion is disabled by default. It can be enabled using option `-del`.
+Automatic deletion is disabled by default. It can be enabled using option `-del` or 
+`--deleteUnexpected`.
+
+**Warning**: Use it with caution, double check not to mistake and specify wrong directories.
 
 When performing transfer from source directory into destination directory,
 file/directory is unexpected in case when destination directory contains file/directory 
