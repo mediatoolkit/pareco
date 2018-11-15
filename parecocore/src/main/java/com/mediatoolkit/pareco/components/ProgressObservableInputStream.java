@@ -5,6 +5,14 @@ import java.io.InputStream;
 import lombok.AllArgsConstructor;
 
 /**
+ * This is a decorator of {@link InputStream} which is input stream itself
+ * and it allows using {@link InputStreamProgressObserver} to be able to track
+ * reading progress of its underlying input stream.
+ * All functionality of input stream is delegated into underlying input stream.
+ *
+ * {@link InputStreamProgressObserver#progress(long)} will be invoked some progres
+ * is made on underlying input stream, namely when bytes are read or bytes are skipped.
+ *
  * @author Antonio Tomac, <antonio.tomac@mediatoolkit.com>
  * @since 30/10/2018
  */
@@ -16,7 +24,11 @@ public class ProgressObservableInputStream extends InputStream {
 
 	@Override
 	public int read() throws IOException {
-		return inputStream.read();
+		int read = inputStream.read();
+		if (read != -1) {
+			progressObserver.progress(1);
+		}
+		return read;
 	}
 
 	@Override
