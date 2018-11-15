@@ -124,6 +124,17 @@ public class LoggingTransferProgressListener implements TransferProgressListener
 		return (chunkRank + 1) + "/" + numChunks;
 	}
 
+	private Duration etaDuration(double speed) {
+		if (speed <= 0) {
+			return null;
+		}
+		long bytesLeft = statsListener.getTotalSize()
+			- statsListener.getTransferredBytes()
+			- statsListener.getSkippedBytes();
+		double secondsLeft = bytesLeft / speed;
+		return Duration.ofMillis((long) (1000 * secondsLeft));
+	}
+
 	@Override
 	public void initializing(String transferMode, String sourceRootDir, String destinationRootDir) {
 		logTransfer("Initializing {} transfer", transferMode);
@@ -266,7 +277,13 @@ public class LoggingTransferProgressListener implements TransferProgressListener
 			if (statsListener == null) {
 				logSpeed("Transfer speed: {}", fileSizePretty(speed) + "/s");
 			} else {
-				logSpeed("Total: {}% | Transfer speed: {}", totalProgressPercent(), fileSizePretty(speed) + "/s");
+				Duration eta = etaDuration(speed);
+				String etaPretty = eta == null ? "--:--" : durationPretty(eta);
+				logSpeed("Total: {}% | Transfer speed: {} ETA: {}",
+					totalProgressPercent(),
+					fileSizePretty(speed) + "/s",
+					etaPretty
+				);
 			}
 		}
 	}
