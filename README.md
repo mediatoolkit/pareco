@@ -44,6 +44,14 @@ Pareco uses maven, use
 
 to build server and client.
 
+After build completes, both client and server will be packaged in
+
+    parecodistribution/target/pareco-distribution-{version}.zip
+    
+and, more conveniently, in uncompressed directory
+
+    parecodistribution/target/pareco-distribution-{version}/
+
 ## Basic usage example
 
 Both client and server offer help option to list available options: 
