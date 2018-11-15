@@ -6,6 +6,11 @@ import java.io.RandomAccessFile;
 import static org.apache.commons.io.IOUtils.EOF;
 
 /**
+ * This is a input stream that reads through bounded portion of file which represents
+ * a chunk in file.
+ *
+ * {@link RandomAccessFile} is used as underlying data source for read operations.
+ *
  * @author Antonio Tomac, <antonio.tomac@mediatoolkit.com>
  * @since 24/10/2018
  */
@@ -15,6 +20,14 @@ public class FileChunkInputStream extends InputStream {
 	private long pos;
 	private long max;
 
+	/**
+	 * Creation of new instance.
+	 *
+	 * @param file to use as data source
+	 * @param offset number of bytes to seek in file before reading
+	 * @param length maximum number of bytes to read by this input stream
+	 * @throws IOException which can be thrown by {@link RandomAccessFile#seek(long)}
+	 */
 	public FileChunkInputStream(RandomAccessFile file, long offset, long length) throws IOException {
 		this.file = file;
 		this.file.seek(offset);
@@ -50,6 +63,11 @@ public class FileChunkInputStream extends InputStream {
 		return bytesRead;
 	}
 
+	/**
+	 * Closes underlying {@link RandomAccessFile}. This stream does not need to be closed if
+	 * if you plan to reuse given instance of {@link RandomAccessFile}.
+	 * @throws IOException when {@link RandomAccessFile#close()} throws it
+	 */
 	@Override
 	public void close() throws IOException {
 		file.close();
