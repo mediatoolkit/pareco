@@ -7,6 +7,7 @@ import java.nio.file.PathMatcher;
 import java.util.function.Predicate;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
+import lombok.NonNull;
 import lombok.experimental.Wither;
 
 /**
@@ -23,10 +24,22 @@ public class FileFilter {
 	private final Predicate<Path> include;
 	private final Predicate<Path> exclude;
 
+	/**
+	 * Test if given {@code path} is explicitly included by this filter.
+	 *
+	 * @param path to be tested
+	 * @return true if it is explicitly included, false otherwise
+	 */
 	public boolean includes(Path path) {
 		return include.test(path);
 	}
 
+	/**
+	 * Test if given {@code path} is explicitly excluded by this filter.
+	 *
+	 * @param path to be tested
+	 * @return true if it is explicitly excluded, false otherwise
+	 */
 	public boolean excludes(Path path) {
 		return exclude.test(path);
 	}
@@ -37,7 +50,24 @@ public class FileFilter {
 
 	private static final FileFilter ACCEPT_ALL = new FileFilter(MATCH_ALL, MATCH_NONE);
 
-	static FileFilter of(String rootDirectory, String includeGlob, String excludeGlob) {
+	/**
+	 * Static factory method for creating new instance.
+	 * If both {@code includeGlob} and {@code excludeGlob} are {@code null} then all contents will match.
+	 * Both include and exclude patterns use glob pattern syntax, see
+	 * {@link java.nio.file.FileSystem#getPathMatcher(String)} for more info.
+	 *
+	 * @param rootDirectory against which include and exclude patterns will be applied relative to
+	 * @param includeGlob pattern to be used for inclusion of files and directories relative to {@code rootDirectory},
+	 *                    may be {@code null} to not have specific inclusion
+	 * @param excludeGlob pattern to be used for exclusion of files and directories relative to {@code rootDirectory},
+	 *                    may be {@code null} to not have specific exclusion
+	 * @return instance of filter
+	 */
+	public static FileFilter of(
+		@NonNull String rootDirectory,
+		String includeGlob,
+		String excludeGlob
+	) {
 		if (includeGlob == null && excludeGlob == null) {
 			return ACCEPT_ALL;
 		}
