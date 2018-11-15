@@ -11,6 +11,7 @@ import java.net.URI;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.NonNull;
 import org.apache.commons.io.IOUtils;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.HttpMethod;
@@ -32,7 +33,11 @@ public class UploadClient {
 
 	@Builder
 	public UploadClient(
-		String httpScheme, String host, int port, int timeout, String authToken
+		@NonNull String httpScheme,
+		@NonNull String host,
+		@NonNull Integer port,
+		@NonNull Integer timeout,
+		String authToken
 	) {
 		this.httpScheme = httpScheme;
 		this.host = host;

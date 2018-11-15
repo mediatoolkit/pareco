@@ -10,6 +10,7 @@ import java.io.InputStream;
 import java.net.URI;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.NonNull;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.HttpMethod;
 import org.springframework.web.client.ResponseExtractor;
@@ -30,7 +31,11 @@ public class DownloadClient {
 
 	@Builder
 	public DownloadClient(
-		String httpScheme, String host, int port, int timeout, String authToken
+		@NonNull String httpScheme,
+		@NonNull String host,
+		@NonNull Integer port,
+		@NonNull Integer timeout,
+		String authToken
 	) {
 		this.httpScheme = httpScheme;
 		this.host = host;
@@ -172,9 +177,6 @@ public class DownloadClient {
 	}
 
 	public static void main(String[] args) {
-		DownloadClient downloadClient = DownloadClient.builder().build();
-		DownloadSessionClient sessionClient = downloadClient.new DownloadSessionClient("");
-		sessionClient.initializeFileDownload(FilePath.of("film[2018].avi"));
 	}
 
 }
