@@ -40,6 +40,7 @@ import one.util.streamex.StreamEx;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import org.assertj.core.util.Files;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -76,7 +77,7 @@ public abstract class BaseIntegration {
 	private DownloadTransferExecutor downloader;
 
 	BaseIntegration() {
-		baseTestWorkspace = new File("testWorkspace");
+		baseTestWorkspace = Files.newTemporaryFolder();
 	}
 
 	@PostConstruct
@@ -102,6 +103,11 @@ public abstract class BaseIntegration {
 	public void before() {
 		delete(baseTestWorkspace);
 		baseTestWorkspace.mkdir();
+	}
+
+	@After
+	public void after() {
+		delete(baseTestWorkspace);
 	}
 
 	void delete(File file) {
