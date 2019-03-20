@@ -165,7 +165,7 @@ public class SessionRepository {
 	}
 
 	@Synchronized
-	@Scheduled(fixedDelay = 10_000L)
+	@Scheduled(fixedDelay = 10_000L, initialDelay = 20_000L)
 	public void expireInactiveSessions() {
 		long now = System.currentTimeMillis();
 		List<String> inactiveUploadSessionIds = EntryStream.of(uploadSessions)
