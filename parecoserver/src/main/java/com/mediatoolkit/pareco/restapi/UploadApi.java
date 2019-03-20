@@ -1,5 +1,6 @@
 package com.mediatoolkit.pareco.restapi;
 
+import com.mediatoolkit.pareco.components.TransferNamesEncoding;
 import com.mediatoolkit.pareco.model.DigestType;
 import com.mediatoolkit.pareco.model.DirectoryStructure;
 import com.mediatoolkit.pareco.model.FileDigest;
@@ -9,8 +10,12 @@ import com.mediatoolkit.pareco.session.UploadSession;
 import com.mediatoolkit.pareco.session.UploadSession.FileUploadSession;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.List;
 import lombok.AllArgsConstructor;
+import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -30,6 +35,14 @@ import org.springframework.web.bind.annotation.RestController;
 public class UploadApi {
 
 	private final SessionRepository sessionRepository;
+	private final TransferNamesEncoding encoding;
+
+	private String decode(String val) {
+		if (val == null) {
+			return null;
+		}
+		return encoding.decode(val);
+	}
 
 	@PostMapping("/init")
 	public String initializeUpload(
@@ -41,7 +54,7 @@ public class UploadApi {
 		@RequestBody DirectoryStructure directoryStructure
 	) {
 		return sessionRepository.initNewUploadSession(
-			serverRootDirectory, directoryStructure, chunkSizeBytes, authToken, include, exclude
+			decode(serverRootDirectory), directoryStructure, chunkSizeBytes, authToken, decode(include), decode(exclude)
 		);
 	}
 
@@ -78,7 +91,7 @@ public class UploadApi {
 		@RequestParam("digestType") DigestType digestType
 	) throws IOException {
 		UploadSession uploadSession = sessionRepository.getUploadSession(transferSession);
-		return uploadSession.getFileDigest(relativeDirectory, fileName, digestType);
+		return uploadSession.getFileDigest(decode(relativeDirectory), decode(fileName), digestType);
 	}
 
 	@PutMapping("/file/skip")
@@ -88,7 +101,7 @@ public class UploadApi {
 		@RequestParam("fileName") String fileName
 	) {
 		UploadSession uploadSession = sessionRepository.getUploadSession(transferSession);
-		uploadSession.skipFileUpload(relativeDirectory, fileName);
+		uploadSession.skipFileUpload(decode(relativeDirectory), decode(fileName));
 	}
 
 	@PostMapping("/file/init")
@@ -98,7 +111,7 @@ public class UploadApi {
 		@RequestParam("fileName") String fileName
 	) throws IOException {
 		UploadSession uploadSession = sessionRepository.getUploadSession(transferSession);
-		return uploadSession.initFileUploadSession(relativeDirectory, fileName);
+		return uploadSession.initFileUploadSession(decode(relativeDirectory), decode(fileName));
 	}
 
 	@PutMapping("/file/chunk")

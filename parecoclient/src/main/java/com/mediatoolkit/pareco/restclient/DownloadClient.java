@@ -1,5 +1,6 @@
 package com.mediatoolkit.pareco.restclient;
 
+import com.mediatoolkit.pareco.components.TransferNamesEncoding;
 import com.mediatoolkit.pareco.model.ChunkInfo;
 import com.mediatoolkit.pareco.model.DigestType;
 import com.mediatoolkit.pareco.model.DirectoryStructure;
@@ -28,6 +29,7 @@ public class DownloadClient {
 	private final String host;
 	private final int port;
 	private final String authToken;
+	private final TransferNamesEncoding encoding;
 
 	@Builder
 	public DownloadClient(
@@ -35,7 +37,8 @@ public class DownloadClient {
 		@NonNull String host,
 		@NonNull Integer port,
 		@NonNull Integer timeout,
-		String authToken
+		String authToken,
+		@NonNull TransferNamesEncoding encoding
 	) {
 		this.httpScheme = httpScheme;
 		this.host = host;
@@ -46,6 +49,11 @@ public class DownloadClient {
 			.setConnectTimeout(timeout)
 			.setReadTimeout(timeout)
 			.build();
+		this.encoding = encoding;
+	}
+
+	private String encode(String val) {
+		return encoding.encode(val);
 	}
 
 	public DownloadSessionClient initializeDownload(
@@ -54,16 +62,16 @@ public class DownloadClient {
 		UriComponentsBuilder builder = UriComponentsBuilder.newInstance()
 			.scheme(httpScheme).host(host).port(port)
 			.path("/download/init")
-			.queryParam("serverRootDirectory", serverRootDirectory)
+			.queryParam("serverRootDirectory", encode(serverRootDirectory))
 			.queryParam("chunkSizeBytes", chunkSizeBytes);
 		if (authToken != null) {
 			builder.queryParam("authToken", authToken);
 		}
 		if (include != null) {
-			builder.queryParam("include", include);
+			builder.queryParam("include", encode(include));
 		}
 		if (exclude != null) {
-			builder.queryParam("exclude", exclude);
+			builder.queryParam("exclude", encode(exclude));
 		}
 		URI uri = builder.build().toUri();
 		String downloadSession = restTemplate.postForObject(uri, null, String.class);
@@ -89,8 +97,8 @@ public class DownloadClient {
 				.scheme(httpScheme).host(host).port(port)
 				.path("/download/file/digest")
 				.queryParam("downloadSession", downloadSession)
-				.queryParam("relativeDirectory", filePath.getRelativeDirectory())
-				.queryParam("fileName", filePath.getFileName())
+				.queryParam("relativeDirectory", encode(filePath.getRelativeDirectory()))
+				.queryParam("fileName", encode(filePath.getFileName()))
 				.queryParam("digestType", digestType)
 				.build().toUri();
 			return restTemplate.getForObject(uri, FileDigest.class);
@@ -101,8 +109,8 @@ public class DownloadClient {
 				.scheme(httpScheme).host(host).port(port)
 				.path("/download/file/skip")
 				.queryParam("downloadSession", downloadSession)
-				.queryParam("relativeDirectory", filePath.getRelativeDirectory())
-				.queryParam("fileName", filePath.getFileName())
+				.queryParam("relativeDirectory", encode(filePath.getRelativeDirectory()))
+				.queryParam("fileName", encode(filePath.getFileName()))
 				.build().toUri();
 			restTemplate.put(uri, null);
 		}
@@ -112,8 +120,8 @@ public class DownloadClient {
 				.scheme(httpScheme).host(host).port(port)
 				.path("/download/file/init")
 				.queryParam("downloadSession", downloadSession)
-				.queryParam("relativeDirectory", filePath.getRelativeDirectory())
-				.queryParam("fileName", filePath.getFileName())
+				.queryParam("relativeDirectory", encode(filePath.getRelativeDirectory()))
+				.queryParam("fileName", encode(filePath.getFileName()))
 				.build().toUri();
 			String fileDownloadSession = restTemplate.postForObject(uri, null, String.class);
 			return new FileDownloadSessionClient(fileDownloadSession);

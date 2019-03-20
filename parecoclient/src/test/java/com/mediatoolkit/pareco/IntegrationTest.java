@@ -180,5 +180,22 @@ public class IntegrationTest extends BaseIntegration {
 		evalTransferTestCase(transferTestCase);
 	}
 
-
+	@Test
+	public void weirdCharsInFileName() {
+		String content = "this is file content";
+		DirContents srcDir = DirContents.newDir()
+			.withFile("weird '\\name' [](){}=.?!#& kraj", content)
+			.withDir("sub\\ ?&dir")
+			.withFile("sub\\ ?&dir/file", "123");
+		DirContents destDir = DirContents.newDir();
+		TransferTestCase transferTestCase = TransferTestCase.builder()
+			.transferTask(defaultTask)
+			.sourceContents(srcDir)
+			.destinationContents(destDir)
+			.expectedDestinationContents(srcDir)
+			.transferredFiles(2)
+			.transferredBytes(byteCountOf(content) + "123".length())
+			.build();
+		evalTransferTestCase(transferTestCase);
+	}
 }

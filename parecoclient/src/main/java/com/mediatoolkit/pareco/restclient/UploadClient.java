@@ -1,5 +1,6 @@
 package com.mediatoolkit.pareco.restclient;
 
+import com.mediatoolkit.pareco.components.TransferNamesEncoding;
 import com.mediatoolkit.pareco.model.ChunkInfo;
 import com.mediatoolkit.pareco.model.DigestType;
 import com.mediatoolkit.pareco.model.DirectoryStructure;
@@ -8,10 +9,14 @@ import com.mediatoolkit.pareco.model.FilePath;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NonNull;
+import lombok.SneakyThrows;
 import org.apache.commons.io.IOUtils;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.HttpMethod;
@@ -26,6 +31,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 public class UploadClient {
 
 	private final RestTemplate restTemplate;
+	private final TransferNamesEncoding encoding;
 	private final String httpScheme;
 	private final String host;
 	private final int port;
@@ -37,7 +43,8 @@ public class UploadClient {
 		@NonNull String host,
 		@NonNull Integer port,
 		@NonNull Integer timeout,
-		String authToken
+		String authToken,
+		@NonNull TransferNamesEncoding encoding
 	) {
 		this.httpScheme = httpScheme;
 		this.host = host;
@@ -48,6 +55,11 @@ public class UploadClient {
 			.setConnectTimeout(timeout)
 			.setReadTimeout(timeout)
 			.build();
+		this.encoding = encoding;
+	}
+
+	private String encode(String val) {
+		return encoding.encode(val);
 	}
 
 	public UploadSessionClient initializeUpload(
@@ -56,16 +68,16 @@ public class UploadClient {
 		UriComponentsBuilder builder = UriComponentsBuilder.newInstance()
 			.scheme(httpScheme).host(host).port(port)
 			.path("/upload/init")
-			.queryParam("serverRootDirectory", serverRootDirectory)
+			.queryParam("serverRootDirectory", encode(serverRootDirectory))
 			.queryParam("chunkSizeBytes", chunkSizeBytes);
 		if (authToken != null) {
 			builder.queryParam("authToken", authToken);
 		}
 		if (include != null) {
-			builder.queryParam("include", include);
+			builder.queryParam("include", encode(include));
 		}
 		if (exclude != null) {
-			builder.queryParam("exclude", exclude);
+			builder.queryParam("exclude", encode(exclude));
 		}
 		URI uri = builder.build().toUri();
 		String uploadSession = restTemplate.postForObject(uri, directoryStructure, String.class);
@@ -109,8 +121,8 @@ public class UploadClient {
 				.scheme(httpScheme).host(host).port(port)
 				.path("/upload/file/digest")
 				.queryParam("uploadSession", uploadSession)
-				.queryParam("relativeDirectory", filePath.getRelativeDirectory())
-				.queryParam("fileName", filePath.getFileName())
+				.queryParam("relativeDirectory", encode(filePath.getRelativeDirectory()))
+				.queryParam("fileName", encode(filePath.getFileName()))
 				.queryParam("digestType", digestType)
 				.build().toUri();
 			return restTemplate.getForObject(uri, FileDigest.class);
@@ -121,8 +133,8 @@ public class UploadClient {
 				.scheme(httpScheme).host(host).port(port)
 				.path("/upload/file/skip")
 				.queryParam("uploadSession", uploadSession)
-				.queryParam("relativeDirectory", filePath.getRelativeDirectory())
-				.queryParam("fileName", filePath.getFileName())
+				.queryParam("relativeDirectory", encode(filePath.getRelativeDirectory()))
+				.queryParam("fileName", encode(filePath.getFileName()))
 				.build().toUri();
 			restTemplate.put(uri, null);
 		}
@@ -132,8 +144,8 @@ public class UploadClient {
 				.scheme(httpScheme).host(host).port(port)
 				.path("/upload/file/init")
 				.queryParam("uploadSession", uploadSession)
-				.queryParam("relativeDirectory", filePath.getRelativeDirectory())
-				.queryParam("fileName", filePath.getFileName())
+				.queryParam("relativeDirectory", encode(filePath.getRelativeDirectory()))
+				.queryParam("fileName", encode(filePath.getFileName()))
 				.build().toUri();
 			String fileUploadSession = restTemplate.postForObject(uri, null, String.class);
 			return new FileUploadSessionClient(fileUploadSession);

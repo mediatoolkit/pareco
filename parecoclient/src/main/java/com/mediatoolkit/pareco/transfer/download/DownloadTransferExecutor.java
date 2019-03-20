@@ -10,6 +10,7 @@ import com.mediatoolkit.pareco.components.ProgressObservableInputStream;
 import com.mediatoolkit.pareco.components.RandomAccessFilePool;
 import com.mediatoolkit.pareco.components.RandomAccessFilePool.Mode;
 import com.mediatoolkit.pareco.components.RandomAccessFilePool.ReturnableRandomAccessFile;
+import com.mediatoolkit.pareco.components.TransferNamesEncoding;
 import com.mediatoolkit.pareco.model.ChunkInfo;
 import com.mediatoolkit.pareco.model.DirectoryStructure;
 import com.mediatoolkit.pareco.model.FileMetadata;
@@ -70,6 +71,7 @@ public class DownloadTransferExecutor {
 	private final ChunkInfosGenerator chunkInfosGenerator;
 	private final MetadataWriter metadataWriter;
 	private final ExitTransferAborter exitTransferAborter;
+	private final TransferNamesEncoding encoding;
 
 	public void executeDownload(
 		TransferTask transferTask,
@@ -82,6 +84,7 @@ public class DownloadTransferExecutor {
 			.port(serverInfo.getPort())
 			.timeout(transferTask.getOptions().getTimeout())
 			.authToken(transferTask.getAuthToken())
+			.encoding(encoding)
 			.build();
 		progressListener.initializing(
 			"download", transferTask.getRemoteRootDirectory(), transferTask.getLocalRootDirectory()

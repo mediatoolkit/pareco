@@ -1,5 +1,6 @@
 package com.mediatoolkit.pareco.restapi;
 
+import com.mediatoolkit.pareco.components.TransferNamesEncoding;
 import com.mediatoolkit.pareco.model.DigestType;
 import com.mediatoolkit.pareco.model.DirectoryStructure;
 import com.mediatoolkit.pareco.model.FileDigest;
@@ -27,6 +28,14 @@ import org.springframework.web.bind.annotation.RestController;
 public class DownloadApi {
 
 	private final SessionRepository sessionRepository;
+	private final TransferNamesEncoding encoding;
+
+	private String decode(String val) {
+		if (val == null) {
+			return null;
+		}
+		return encoding.decode(val);
+	}
 
 	@PostMapping("/init")
 	public String initializeDownload(
@@ -37,7 +46,7 @@ public class DownloadApi {
 		@RequestParam(name = "exclude", required = false) String exclude
 	) throws IOException {
 		return sessionRepository.initNewDownloadSession(
-			serverRootDirectory, chunkSizeBytes, authToken, include, exclude
+			decode(serverRootDirectory), chunkSizeBytes, authToken, decode(include), decode(exclude)
 		);
 	}
 
@@ -57,7 +66,7 @@ public class DownloadApi {
 		@RequestParam("digestType") DigestType digestType
 	) throws IOException {
 		DownloadSession downloadSession = sessionRepository.getDownloadSession(transferSession);
-		return downloadSession.getFileDigest(relativeDirectory, fileName, digestType);
+		return downloadSession.getFileDigest(decode(relativeDirectory), decode(fileName), digestType);
 	}
 
 	@PutMapping("/file/skip")
@@ -67,7 +76,7 @@ public class DownloadApi {
 		@RequestParam("fileName") String fileName
 	) {
 		DownloadSession downloadSession = sessionRepository.getDownloadSession(transferSession);
-		downloadSession.skipFileDownload(relativeDirectory, fileName);
+		downloadSession.skipFileDownload(decode(relativeDirectory), decode(fileName));
 	}
 
 	@PostMapping("/file/init")
@@ -77,7 +86,7 @@ public class DownloadApi {
 		@RequestParam("fileName") String fileName
 	) throws IOException {
 		DownloadSession downloadSession = sessionRepository.getDownloadSession(transferSession);
-		return downloadSession.initFileDownloadSession(relativeDirectory, fileName);
+		return downloadSession.initFileDownloadSession(decode(relativeDirectory), decode(fileName));
 	}
 
 	@GetMapping("/file/chunk")
