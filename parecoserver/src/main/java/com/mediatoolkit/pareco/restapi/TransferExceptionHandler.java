@@ -1,5 +1,6 @@
 package com.mediatoolkit.pareco.restapi;
 
+import com.mediatoolkit.pareco.exceptions.ParecoException;
 import com.mediatoolkit.pareco.model.ErrorBody;
 import java.util.Date;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +24,9 @@ public class TransferExceptionHandler extends ResponseEntityExceptionHandler {
 	@Order(Ordered.HIGHEST_PRECEDENCE)
 	@ExceptionHandler(Exception.class)
 	public final ResponseEntity<ErrorBody> handleParecoException(Exception ex, WebRequest request) {
+		if (!(ex instanceof ParecoException)) {
+			log.warn("Unhandled server exception: ", ex);
+		}
 		ErrorBody errorBody = ErrorBody.builder()
 			.error("Server Exception")
 			.status(500)
@@ -30,7 +34,7 @@ public class TransferExceptionHandler extends ResponseEntityExceptionHandler {
 			.path(request.getContextPath())
 			.timestamp(new Date())
 			.build();
-		log.warn("Error: {}", errorBody);
+		log.error("Exception returning error: {}", errorBody);
 		return new ResponseEntity<>(errorBody, HttpStatus.INTERNAL_SERVER_ERROR);
 	}
 
