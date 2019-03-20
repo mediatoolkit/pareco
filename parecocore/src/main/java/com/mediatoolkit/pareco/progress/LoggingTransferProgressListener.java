@@ -230,12 +230,12 @@ public class LoggingTransferProgressListener implements TransferProgressListener
 		}
 		long fileSize = fileMetadataMap.get(filePath).getFileSizeBytes();
 		if (statsListener == null) {
-			logFile("[{}] | Completed file '{}'", fileSizePretty(fileSize), filePath);
+			logFile("[{}] | File done '{}'", fileSizePretty(fileSize), filePath);
 			return;
 		}
 		FileTransferStats fileStats = statsListener.getFileStats(filePath);
 		double effectiveSpeed = divRound1d(1000 * fileSize, fileStats.totalTime());
-		logFile("Total: {}% | ({}) [{}] | Completed file in {}, speed {} '{}'",
+		logFile("Total: {}% | ({}) [{}] | File done in {}, speed {} '{}'",
 			totalProgressPercent(), fileRank(filePath), fileSizePretty(fileSize),
 			durationPretty(Duration.ofMillis(fileStats.totalTime())),
 			fileSizePretty(effectiveSpeed) + "/s",
@@ -276,11 +276,11 @@ public class LoggingTransferProgressListener implements TransferProgressListener
 		if (acquirePrintSpeed(now)) {
 			double speed = round1d(speedometer.getSpeed());
 			if (statsListener == null) {
-				logSpeed("Transfer speed: {}", fileSizePretty(speed) + "/s");
+				logSpeed("Speed: {}", fileSizePretty(speed) + "/s");
 			} else {
 				Duration eta = etaDuration(speed);
 				String etaPretty = eta == null ? "--:--" : durationPretty(eta);
-				logSpeed("Total: {}% | Transfer speed: {} ETA: {}",
+				logSpeed("Total: {}% | Speed: {} ETA: {}",
 					totalProgressPercent(),
 					fileSizePretty(speed) + "/s",
 					etaPretty
