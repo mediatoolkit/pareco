@@ -56,7 +56,7 @@ public class ParecoClient {
 		) {
 			TransferProgressListener progressListener = ctx.getBean(TransferProgressListenerFactory.class)
 				.createTransferProgressListener(
-					options.getLoggingLevel(), !options.isNoTransferStats()
+					options.getLoggingLevel(), !options.isNoTransferStats(), options.isForceColors()
 				);
 			switch (options.getMode()) {
 				case upload:

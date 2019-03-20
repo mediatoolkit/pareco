@@ -29,10 +29,6 @@ import org.slf4j.MarkerFactory;
  */
 public class LoggingTransferProgressListener implements TransferProgressListener {
 
-	static {
-		AnsiConsole.systemInstall();
-	}
-
 	private static final Logger log = org.slf4j.LoggerFactory.getLogger("Transfer");
 
 	private final Marker transferTaskMarker = MarkerFactory.getMarker("TRANSFER_TASK");
@@ -95,12 +91,17 @@ public class LoggingTransferProgressListener implements TransferProgressListener
 	@Builder
 	private LoggingTransferProgressListener(
 		@NonNull LoggingFilter loggingFilter,
+		boolean forceColors,
 		StatsRecordingTransferProgressListener statsListener,
 		Speedometer speedometer
 	) {
 		this.statsListener = statsListener;
 		this.speedometer = speedometer;
 		this.loggingFilter = loggingFilter;
+		if (forceColors) {
+			System.setProperty("jansi.force", "true");
+		}
+		AnsiConsole.systemInstall();
 	}
 
 	private String fileRank(FilePath filePath) {

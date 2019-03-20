@@ -81,6 +81,9 @@ public class CommandLineOptions {
 	@Parameter(names = {"-log", "--logLevel"}, description = "Choose which logging level to use")
 	private TransferLoggingLevel loggingLevel = TransferLoggingLevel.FILES;
 
+	@Parameter(names = {"--forceColors"}, description = "Force ANSI colors output even if not tty")
+	private boolean forceColors = false;
+
 	@Parameter(names = {"--noStats"}, description = "Choose to disable tracking and logging statistics of transport")
 	private boolean noTransferStats = false;
 

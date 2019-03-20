@@ -134,6 +134,7 @@ public abstract class BaseIntegration {
 	ProgressListener newProgressListener() {
 		StatsRecordingTransferProgressListener statsProgressListener = new StatsRecordingTransferProgressListener();
 		LoggingTransferProgressListener loggingProgressListener = LoggingTransferProgressListener.builder()
+			.forceColors(true)
 			.statsListener(statsProgressListener)
 			.speedometer(new Speedometer())
 			.loggingFilter(LoggingFilter.CHUNKS)

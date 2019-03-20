@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 public class TransferProgressListenerFactory {
 
 	public TransferProgressListener createTransferProgressListener(
-		TransferLoggingLevel loggingLevel, boolean stats
+		TransferLoggingLevel loggingLevel, boolean stats, boolean forceColors
 	) {
 		StatsRecordingTransferProgressListener statsProgressListener = stats
 			? new StatsRecordingTransferProgressListener()
@@ -22,11 +22,13 @@ public class TransferProgressListenerFactory {
 				return TransferProgressListener.NO_OP_LISTENER;
 			case QUIET:
 				return LoggingTransferProgressListener.builder()
+					.forceColors(forceColors)
 					.loggingFilter(LoggingFilter.START_END)
 					.build();
 			case STATS_NO_SPEED:
 				return CompositeTransferProgressListener.of(
 					statsProgressListener, LoggingTransferProgressListener.builder()
+						.forceColors(forceColors)
 						.statsListener(statsProgressListener)
 						.loggingFilter(LoggingFilter.START_END)
 						.build()
@@ -34,6 +36,7 @@ public class TransferProgressListenerFactory {
 			case STATS:
 				return CompositeTransferProgressListener.of(
 					statsProgressListener, LoggingTransferProgressListener.builder()
+						.forceColors(forceColors)
 						.statsListener(statsProgressListener)
 						.speedometer(speedometer)
 						.loggingFilter(LoggingFilter.START_END_SPEED)
@@ -42,6 +45,7 @@ public class TransferProgressListenerFactory {
 			case FILES_NO_SPEED:
 				return CompositeTransferProgressListener.of(
 					statsProgressListener, LoggingTransferProgressListener.builder()
+						.forceColors(forceColors)
 						.loggingFilter(LoggingFilter.FILES)
 						.statsListener(statsProgressListener)
 						.build()
@@ -49,6 +53,7 @@ public class TransferProgressListenerFactory {
 			case FILES:
 				return CompositeTransferProgressListener.of(
 					statsProgressListener, LoggingTransferProgressListener.builder()
+						.forceColors(forceColors)
 						.loggingFilter(LoggingFilter.FILES_SPEED)
 						.speedometer(speedometer)
 						.statsListener(statsProgressListener)
@@ -57,6 +62,7 @@ public class TransferProgressListenerFactory {
 			case CHUNKS:
 				return CompositeTransferProgressListener.of(
 					statsProgressListener, LoggingTransferProgressListener.builder()
+						.forceColors(forceColors)
 						.loggingFilter(LoggingFilter.CHUNKS)
 						.speedometer(speedometer)
 						.statsListener(statsProgressListener)
