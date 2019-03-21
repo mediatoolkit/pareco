@@ -2,6 +2,7 @@ package com.mediatoolkit.pareco.restclient;
 
 import com.mediatoolkit.pareco.exceptions.ParecoException;
 import com.mediatoolkit.pareco.model.ErrorBody;
+import com.mediatoolkit.pareco.model.ErrorBody.Type;
 import lombok.Getter;
 
 /**
@@ -24,12 +25,29 @@ public abstract class TransferClientException extends ParecoException {
 			this.errorBody = errorBody;
 		}
 
+		@Override
+		public Type type() {
+			return errorBody.getType();
+		}
+		
+		public static class FileDeletedOnServerSideException extends ServerSideTransferClientException {
+
+			public FileDeletedOnServerSideException(ErrorBody errorBody) {
+				super(errorBody);
+			}
+		}
+
 	}
 
 	public static class UnknownErrorTransferClientException extends TransferClientException {
 
 		public UnknownErrorTransferClientException(String message) {
 			super(message);
+		}
+
+		@Override
+		public Type type() {
+			return Type.UNKNOWN;
 		}
 	}
 }

@@ -11,6 +11,8 @@ import com.mediatoolkit.pareco.components.RandomAccessFilePool;
 import com.mediatoolkit.pareco.components.RandomAccessFilePool.Mode;
 import com.mediatoolkit.pareco.components.RandomAccessFilePool.ReturnableRandomAccessFile;
 import com.mediatoolkit.pareco.components.TransferNamesEncoding;
+import com.mediatoolkit.pareco.exceptions.FileDeletedException;
+import com.mediatoolkit.pareco.exceptions.UnknownTransferException;
 import com.mediatoolkit.pareco.model.ChunkInfo;
 import com.mediatoolkit.pareco.model.DirectoryStructure;
 import com.mediatoolkit.pareco.model.FileMetadata;
@@ -20,6 +22,7 @@ import com.mediatoolkit.pareco.progress.TransferProgressListener;
 import com.mediatoolkit.pareco.restclient.DownloadClient;
 import com.mediatoolkit.pareco.restclient.DownloadClient.DownloadSessionClient;
 import com.mediatoolkit.pareco.restclient.DownloadClient.FileDownloadSessionClient;
+import com.mediatoolkit.pareco.restclient.TransferClientException.ServerSideTransferClientException.FileDeletedOnServerSideException;
 import com.mediatoolkit.pareco.transfer.ExitTransferAborter;
 import com.mediatoolkit.pareco.transfer.FileSizeClassifier;
 import com.mediatoolkit.pareco.transfer.FileTransferFilter;
@@ -38,10 +41,12 @@ import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import static java.util.Collections.singletonList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -58,14 +63,14 @@ import org.springframework.stereotype.Component;
 @AllArgsConstructor
 public class DownloadTransferExecutor {
 
-	private final ThreadFactory chunkThreadFactory = new CustomizableThreadFactory("chunk_downloader_");
-	private final ThreadFactory fileThreadFactory = new CustomizableThreadFactory("file_downloader_");
+	private final ThreadFactory chunkThreadFactory = new CustomizableThreadFactory("ChunkDownload_");
+	private final ThreadFactory fileThreadFactory = new CustomizableThreadFactory("FileDownload_");
 
 	private final DirectoryStructureReader directoryStructureReader;
 	private final UnexpectedFilesDeleter unexpectedFilesDeleter;
 	private final FileSizeClassifier fileSizeClassifier;
 	private final FileDeleter fileDeleter;
-	private final FileTransferFilter uploadTransferFilter;
+	private final FileTransferFilter fileTransferFilter;
 	private final DirectoryWriter directoryWriter;
 	private final FileChunkWriter fileChunkWriter;
 	private final ChunkInfosGenerator chunkInfosGenerator;
@@ -163,7 +168,7 @@ public class DownloadTransferExecutor {
 				.orElse(FileStatus.NOT_EXIST);
 			String localRootDirectory = transferTask.getLocalRootDirectory();
 			progressListener.fileAnalyze(remoteFileMetadata.getFilePath());
-			FileFilterResult fileFilterResult = uploadTransferFilter.checkIsDownloadTransferNeeded(
+			FileFilterResult fileFilterResult = fileTransferFilter.checkIsDownloadTransferNeeded(
 				localRootDirectory, localFileStatus, remoteFileMetadata, downloadSessionClient, transferTask.getOptions()
 			);
 			FilePath filePath = remoteFileMetadata.getFilePath();
@@ -214,11 +219,10 @@ public class DownloadTransferExecutor {
 				);
 				List<CompletableFuture<Void>> chunkCompletables = new ArrayList<>();
 				for (ChunkInfo chunkInfo : chunkInfos) {
-					byte[] localChunkDigest = localFileChunkDigests.get(chunkInfo);
-					byte[] remoteChunkDigest = remoteFileChunkDigests.get(chunkInfo);
-					if (localChunkDigest != null && remoteChunkDigest != null && Arrays.equals(localChunkDigest, remoteChunkDigest)) {
-						//skipping transfer of whole chunk
-						progressListener.fileChunkSkipped(filePath, chunkInfo);
+					boolean skipChunk = fileTransferFilter.skipChunkIfNeeded(
+						localFileChunkDigests, remoteFileChunkDigests, filePath, chunkInfo, progressListener
+					);
+					if (skipChunk) {
 						continue;
 					}
 					chunkCompletables.add(CompletableFuture.runAsync(
@@ -226,9 +230,21 @@ public class DownloadTransferExecutor {
 						chunkDownloadService
 					));
 				}
-				chunkCompletables.forEach(CompletableFuture::join);
+				try {
+					chunkCompletables.forEach(CompletableFuture::join);
+					metadataWriter.writeFileMetadata(localRootDirectory, remoteFileMetadata);
+				} catch (CompletionException completionEx) {
+					Throwable cause = completionEx.getCause();
+					if (cause instanceof FileDeletedOnServerSideException) {
+						fileDeleter.delete(transferTask.getLocalRootDirectory(), singletonList(filePath));
+						progressListener.fileDeleted(filePath);
+					} else {
+						throw new UnknownTransferException(completionEx);
+					}
+				} finally {
+					chunkCompletables.forEach(future -> future.cancel(false));
+				}
 			}
-			metadataWriter.writeFileMetadata(localRootDirectory, remoteFileMetadata);
 			fileDownloadSessionClient.commitFileDownload();
 			progressListener.fileCompleted(filePath);
 		}

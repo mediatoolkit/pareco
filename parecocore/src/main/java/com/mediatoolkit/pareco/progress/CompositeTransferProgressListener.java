@@ -75,6 +75,11 @@ public class CompositeTransferProgressListener implements TransferProgressListen
 	}
 
 	@Override
+	public void fileDeleted(FilePath filePath) {
+		listeners.forEach(listener -> listener.fileDeleted(filePath));
+	}
+
+	@Override
 	public void fileCompleted(FilePath filePath) {
 		listeners.forEach(listener -> listener.fileCompleted(filePath));
 	}

@@ -25,6 +25,8 @@ public interface TransferProgressListener {
 
 	void fileStarted(FilePath filePath);
 
+	void fileDeleted(FilePath filePath);
+
 	void fileCompleted(FilePath filePath);
 
 	void fileChunkSkipped(FilePath filePath, ChunkInfo chunkInfo);
@@ -65,6 +67,10 @@ public interface TransferProgressListener {
 
 		@Override
 		public void fileStarted(FilePath filePath) {
+		}
+
+		@Override
+		public void fileDeleted(FilePath filePath) {
 		}
 
 		@Override

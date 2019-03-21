@@ -1,5 +1,6 @@
 package com.mediatoolkit.pareco.restapi;
 
+import com.mediatoolkit.pareco.exceptions.FileDeletedException;
 import com.mediatoolkit.pareco.exceptions.ParecoException;
 import com.mediatoolkit.pareco.model.ErrorBody;
 import java.util.Date;
@@ -24,17 +25,38 @@ public class TransferExceptionHandler extends ResponseEntityExceptionHandler {
 	@Order(Ordered.HIGHEST_PRECEDENCE)
 	@ExceptionHandler(Exception.class)
 	public final ResponseEntity<ErrorBody> handleParecoException(Exception ex, WebRequest request) {
-		if (!(ex instanceof ParecoException)) {
+		ErrorBody.Type type;
+		String message;
+		if (ex instanceof ParecoException) {
+			type = ((ParecoException) ex).type();
+			if (ex instanceof FileDeletedException) {
+				message = "File deleted concurrently: " + ((FileDeletedException) ex).getFilePath().toRelativePath();
+			} else {
+				message = ex.toString();
+			}
+		} else {
 			log.warn("Unhandled server exception: ", ex);
+			type = ErrorBody.Type.UNKNOWN;
+			message = ex.toString();
 		}
 		ErrorBody errorBody = ErrorBody.builder()
 			.error("Server Exception")
 			.status(500)
-			.message(ex.toString())
+			.message(message)
 			.path(request.getContextPath())
 			.timestamp(new Date())
+			.type(type)
 			.build();
-		log.error("Exception returning error: {}", errorBody);
+		switch (type) {
+			case FILE_DELETED:
+				log.info(message);
+				break;
+			case ILLEGAL_STATE:
+				log.warn("Illegal state: {}", errorBody);
+				break;
+			default:
+				log.error("Exception returning error: {}", errorBody);
+		}
 		return new ResponseEntity<>(errorBody, HttpStatus.INTERNAL_SERVER_ERROR);
 	}
 

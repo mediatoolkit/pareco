@@ -17,6 +17,7 @@ import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -131,6 +132,14 @@ public class UploadApi {
 	) {
 		FileUploadSession uploadSession = sessionRepository.getFileUploadSession(fileTransferSession);
 		uploadSession.commit();
+	}
+
+	@DeleteMapping("/file/delete")
+	public void deleteFile(
+		@RequestParam("fileUploadSession") String fileTransferSession
+	) {
+		FileUploadSession uploadSession = sessionRepository.getFileUploadSession(fileTransferSession);
+		uploadSession.delete();
 	}
 
 	@PutMapping("/commit")

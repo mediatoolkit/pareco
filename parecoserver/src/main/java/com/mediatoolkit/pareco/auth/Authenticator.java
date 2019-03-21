@@ -8,21 +8,21 @@ import lombok.NonNull;
  */
 public interface Authenticator {
 
-	void authenticate(String authToken) throws AuthenticationExceptipn;
+	void authenticate(String authToken) throws AuthenticationException;
 
 	Authenticator NO_AUTH = authToken -> {
 		if (authToken != null) {
-			throw new AuthenticationExceptipn("AuthToken is received, expecting no token");
+			throw new AuthenticationException("AuthToken is received, expecting no token");
 		}
 	};
 
 	static Authenticator withToken(@NonNull String authToken) {
 		return token -> {
 			if (token == null) {
-				throw new AuthenticationExceptipn("Valid authToken is required, got null");
+				throw new AuthenticationException("Valid authToken is required, got null");
 			}
 			if (!authToken.equals(token)) {
-				throw new AuthenticationExceptipn("Given authToken is invalid");
+				throw new AuthenticationException("Given authToken is invalid");
 			}
 		};
 	}

@@ -1,6 +1,8 @@
 package com.mediatoolkit.pareco.transfer;
 
 import com.mediatoolkit.pareco.components.FileDigestCalculator;
+import com.mediatoolkit.pareco.model.ChunkInfo;
+import com.mediatoolkit.pareco.progress.TransferProgressListener;
 import com.mediatoolkit.pareco.transfer.model.FileFilterResult;
 import com.mediatoolkit.pareco.transfer.model.TransferOptions;
 import static com.mediatoolkit.pareco.util.Util.uncheckedSupplierSneaky;
@@ -15,6 +17,8 @@ import com.mediatoolkit.pareco.transfer.model.FileFilterResult.CheckResultType;
 import com.mediatoolkit.pareco.transfer.model.TransferOptions.FileIntegrityOptions;
 import com.mediatoolkit.pareco.transfer.model.TransferOptions.IntegrityCheckType;
 import java.nio.file.attribute.PosixFilePermission;
+import java.util.Arrays;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -72,6 +76,23 @@ public class FileTransferFilter implements AutoCloseable {
 			)),
 			() -> uploadSessionClient.getFileDigest(filePath, digestType)
 		);
+	}
+
+	public boolean skipChunkIfNeeded(
+		Map<ChunkInfo, byte[]> localFileChunkDigests,
+		Map<ChunkInfo, byte[]> remoteFileChunkDigests,
+		FilePath filePath,
+		ChunkInfo chunkInfo,
+		TransferProgressListener progressListener
+	) {
+		byte[] localChunkDigest = localFileChunkDigests.get(chunkInfo);
+		byte[] remoteChunkDigest = remoteFileChunkDigests.get(chunkInfo);
+		if (localChunkDigest != null && remoteChunkDigest != null && Arrays.equals(localChunkDigest, remoteChunkDigest)) {
+			//skipping transfer of whole chunk
+			progressListener.fileChunkSkipped(filePath, chunkInfo);
+			return true;
+		}
+		return false;
 	}
 
 	private FileFilterResult checkIsTransferNeeded(

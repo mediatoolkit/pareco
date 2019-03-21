@@ -200,6 +200,15 @@ public class UploadClient {
 			restTemplate.put(uri, null);
 		}
 
+		public void deleteFile() {
+			URI uri = UriComponentsBuilder.newInstance()
+				.scheme(httpScheme).host(host).port(port)
+				.path("/upload/file/delete")
+				.queryParam("fileUploadSession", fileUploadSession)
+				.build().toUri();
+			restTemplate.delete(uri);
+		}
+
 	}
 
 }

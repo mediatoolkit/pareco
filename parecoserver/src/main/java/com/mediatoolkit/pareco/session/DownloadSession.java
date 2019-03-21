@@ -7,6 +7,7 @@ import com.mediatoolkit.pareco.components.RandomAccessFilePool;
 import com.mediatoolkit.pareco.components.RandomAccessFilePool.Mode;
 import com.mediatoolkit.pareco.exceptions.AlreadyCommitedException;
 import com.mediatoolkit.pareco.exceptions.DuplicateFileMetadataException;
+import com.mediatoolkit.pareco.exceptions.FileDeletedException;
 import com.mediatoolkit.pareco.exceptions.FileNotSpecifiedDuringInitializationException;
 import com.mediatoolkit.pareco.exceptions.SessionNotExistsException;
 import com.mediatoolkit.pareco.model.DigestType;
@@ -15,9 +16,11 @@ import com.mediatoolkit.pareco.model.FileDigest;
 import com.mediatoolkit.pareco.model.FileMetadata;
 import com.mediatoolkit.pareco.model.FilePath;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import lombok.Getter;
@@ -150,10 +153,14 @@ public class DownloadSession {
 			long offsetBytes, long sizeBytes, OutputStream outputStream
 		) throws IOException {
 			checkFileCommitted();
-			randomAccessFilePool.doOnFile(file -> {
-				FileChunkInputStream inputStream = new FileChunkInputStream(file, offsetBytes, sizeBytes);
-				IOUtils.copy(inputStream, outputStream);
-			});
+			try {
+				randomAccessFilePool.doOnFile(file -> {
+					FileChunkInputStream inputStream = new FileChunkInputStream(file, offsetBytes, sizeBytes);
+					IOUtils.copy(inputStream, outputStream);
+				});
+			} catch (FileNotFoundException ex) {
+				throw new FileDeletedException(fileMetadata.getFilePath(), "Can't download chunk on deleted file", ex);
+			}
 		}
 
 		private void checkFileCommitted() {

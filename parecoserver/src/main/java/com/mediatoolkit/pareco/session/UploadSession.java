@@ -185,6 +185,7 @@ public class UploadSession {
 		private final RandomAccessFilePool randomAccessFilePool;
 		private final File file;
 		private volatile boolean committed;
+		private volatile boolean deleted;
 
 		FileUploadSession(String rootDirectory, FileMetadata srcFileMetadata) {
 			this.rootDirectory = rootDirectory;
@@ -192,6 +193,7 @@ public class UploadSession {
 			this.file = new File(srcFileMetadata.getFilePath().toAbsolutePath(rootDirectory));
 			this.randomAccessFilePool = new RandomAccessFilePool(file, Mode.READ_WRITE);
 			committed = false;
+			deleted = false;
 		}
 
 		private void allocateFileToRequiredSize() throws IOException {
@@ -221,7 +223,15 @@ public class UploadSession {
 			checkFileCommitted();
 			committed = true;
 			randomAccessFilePool.close();
-			metadataWriter.writeFileMetadata(rootDirectory, srcFileMetadata);
+			if (!deleted) {
+				metadataWriter.writeFileMetadata(rootDirectory, srcFileMetadata);
+			}
+		}
+
+		public void delete() {
+			checkFileCommitted();
+			file.delete();
+			deleted = true;
 		}
 
 		private void abort() {

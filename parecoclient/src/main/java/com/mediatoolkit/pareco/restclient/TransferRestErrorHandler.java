@@ -2,7 +2,9 @@ package com.mediatoolkit.pareco.restclient;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mediatoolkit.pareco.model.ErrorBody;
+import com.mediatoolkit.pareco.model.ErrorBody.Type;
 import com.mediatoolkit.pareco.restclient.TransferClientException.ServerSideTransferClientException;
+import com.mediatoolkit.pareco.restclient.TransferClientException.ServerSideTransferClientException.FileDeletedOnServerSideException;
 import com.mediatoolkit.pareco.restclient.TransferClientException.UnknownErrorTransferClientException;
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -29,6 +31,9 @@ public class TransferRestErrorHandler implements ResponseErrorHandler {
 		byte[] body = IOUtils.toByteArray(response.getBody());
 		try {
 			ErrorBody errorBody = objectMapper.readValue(body, ErrorBody.class);
+			if (errorBody.getType() == Type.FILE_DELETED) {
+				throw new FileDeletedOnServerSideException(errorBody);
+			}
 			throw new ServerSideTransferClientException(errorBody);
 		} catch (IOException ignore) {
 			throw new UnknownErrorTransferClientException(

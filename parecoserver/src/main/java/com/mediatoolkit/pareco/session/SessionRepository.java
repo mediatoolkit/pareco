@@ -165,8 +165,8 @@ public class SessionRepository {
 	}
 
 	@Synchronized
-	@Scheduled(fixedDelay = 10_000L, initialDelay = 20_000L)
 	public void expireInactiveSessions() {
+		log.trace("Checking if need to expire sessions");
 		long now = System.currentTimeMillis();
 		List<String> inactiveUploadSessionIds = EntryStream.of(uploadSessions)
 			.filterValues(uploadSession -> now - uploadSession.getLastActivityTime() > maxSessionInactivity)

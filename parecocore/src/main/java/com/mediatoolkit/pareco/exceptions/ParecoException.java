@@ -1,10 +1,12 @@
 package com.mediatoolkit.pareco.exceptions;
 
+import com.mediatoolkit.pareco.model.ErrorBody;
+
 /**
  * @author Antonio Tomac, <antonio.tomac@mediatoolkit.com>
  * @since 05/11/2018
  */
-public class ParecoException extends RuntimeException {
+public abstract class ParecoException extends RuntimeException {
 
 	public ParecoException() {
 	}
@@ -13,7 +15,13 @@ public class ParecoException extends RuntimeException {
 		super(message);
 	}
 
+	public ParecoException(Throwable cause) {
+		super(cause);
+	}
+
 	public ParecoException(String message, Throwable cause) {
 		super(message, cause);
 	}
+
+	public abstract ErrorBody.Type type();
 }

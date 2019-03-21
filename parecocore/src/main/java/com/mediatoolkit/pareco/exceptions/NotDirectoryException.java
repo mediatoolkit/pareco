@@ -1,6 +1,6 @@
 package com.mediatoolkit.pareco.exceptions;
 
-import java.io.IOException;
+import com.mediatoolkit.pareco.model.ErrorBody.Type;
 
 /**
  * @author Antonio Tomac, <antonio.tomac@mediatoolkit.com>
@@ -11,4 +11,10 @@ public class NotDirectoryException extends ParecoException {
 	public NotDirectoryException(String message) {
 		super(message);
 	}
+
+	@Override
+	public Type type() {
+		return Type.ILLEGAL_STATE;
+	}
+
 }

@@ -1,10 +1,12 @@
 package com.mediatoolkit.pareco;
 
 import com.mediatoolkit.pareco.transfer.model.TransferTask;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
+import one.util.streamex.IntStreamEx;
 import org.junit.Test;
 
 /**
@@ -195,6 +197,32 @@ public class IntegrationTest extends BaseIntegration {
 			.expectedDestinationContents(srcDir)
 			.transferredFiles(2)
 			.transferredBytes(byteCountOf(content) + "123".length())
+			.build();
+		evalTransferTestCase(transferTestCase);
+	}
+
+	@Test
+	public void filesDeletedDuringTransfer() {
+		TransferTask task = defaultTask.withOptions(defaultTask.getOptions().withChunkSizeBytes(10));
+		DirContents srcDir = DirContents.newDir()
+			.withFile("no_deletion", "content")
+			.withFile("to_be_deleted_small", "content")
+			.withFile("to_be_deleted_large", IntStreamEx.range(30).mapToObj(i -> "x").joining());
+		DirContents destDir = DirContents.newDir();
+		TransferTestCase transferTestCase = TransferTestCase.builder()
+			.transferTask(task)
+			.sourceContents(srcDir)
+			.destinationContents(destDir)
+			.expectedDestinationContents(DirContents.newDir()
+				.withFile("no_deletion", "content")
+			)
+			.transferredFiles(3)
+			.deletedConcurrently(2)
+			.transferredBytes(7)
+			.injectingActions(InjectingActions.builder()
+				.onStarted((ctx, arg) -> ctx.deleteSrcFiles("to_be_deleted_small", "to_be_deleted_large"))
+				.build()
+			)
 			.build();
 		evalTransferTestCase(transferTestCase);
 	}

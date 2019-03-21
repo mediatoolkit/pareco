@@ -31,6 +31,7 @@ public class StatsRecordingTransferProgressListener implements TransferProgressL
 	private long totalSize;
 	private int deletedFiles;
 	private int deletedDirectories;
+	private int concurrentDeletions;
 	private int numFiles;
 	private int numDirectories;
 	private int skippedFilesChunks;
@@ -40,6 +41,10 @@ public class StatsRecordingTransferProgressListener implements TransferProgressL
 	private Map<FilePath, FileTransferStats> filesStats = new HashMap<>();
 	private int currentFileRank = 0;
 	private Map<FilePath, Integer> filesRanks = new HashMap<>();
+
+	public long timeFromStartToNow() {
+		return System.currentTimeMillis() - timeStart;
+	}
 
 	public long totalTime() {
 		return timeEnd - timeStart;
@@ -111,6 +116,12 @@ public class StatsRecordingTransferProgressListener implements TransferProgressL
 		transferredFiles++;
 		FileTransferStats fileStats = filesStats.get(filePath);
 		fileStats.timeEnd = System.currentTimeMillis();
+	}
+
+	@Override
+	@Synchronized
+	public void fileDeleted(FilePath filePath) {
+		concurrentDeletions++;
 	}
 
 	@Override

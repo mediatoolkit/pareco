@@ -2,6 +2,7 @@ package com.mediatoolkit.pareco.components;
 
 import com.google.common.hash.HashCode;
 import com.google.common.hash.HashingInputStream;
+import com.mediatoolkit.pareco.exceptions.FileDeletedException;
 import com.mediatoolkit.pareco.model.ChunkInfo;
 import com.mediatoolkit.pareco.model.DigestType;
 import com.mediatoolkit.pareco.model.FileDigest;
@@ -44,6 +45,8 @@ public class FileDigestCalculator {
 				byte[] digest = calculateChunkDigest(randomAccessFile, chunkInfo, digestType);
 				chunkDigests.add(ChunkDigest.of(digest, chunkInfo));
 			}
+		} catch (FileNotFoundException ex) {
+			throw new FileDeletedException(filePath, "Can't calc digest of deleted file", ex);
 		}
 		return FileDigest.builder()
 			.digestType(digestType)

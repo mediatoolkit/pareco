@@ -8,12 +8,16 @@ import com.mediatoolkit.pareco.components.RandomAccessFilePool;
 import com.mediatoolkit.pareco.components.RandomAccessFilePool.Mode;
 import com.mediatoolkit.pareco.components.RandomAccessFilePool.ReturnableRandomAccessFile;
 import com.mediatoolkit.pareco.components.TransferNamesEncoding;
+import com.mediatoolkit.pareco.exceptions.FileDeletedException;
+import com.mediatoolkit.pareco.exceptions.ParecoException;
+import com.mediatoolkit.pareco.exceptions.UnknownTransferException;
 import com.mediatoolkit.pareco.model.ChunkInfo;
 import com.mediatoolkit.pareco.model.DirectoryStructure;
 import com.mediatoolkit.pareco.model.FileMetadata;
 import com.mediatoolkit.pareco.model.FilePath;
 import com.mediatoolkit.pareco.model.FileStatus;
 import com.mediatoolkit.pareco.progress.TransferProgressListener;
+import com.mediatoolkit.pareco.restclient.TransferClientException.ServerSideTransferClientException.FileDeletedOnServerSideException;
 import com.mediatoolkit.pareco.restclient.UploadClient;
 import com.mediatoolkit.pareco.restclient.UploadClient.FileUploadSessionClient;
 import com.mediatoolkit.pareco.restclient.UploadClient.UploadSessionClient;
@@ -28,16 +32,19 @@ import com.mediatoolkit.pareco.transfer.model.TransferOptions;
 import com.mediatoolkit.pareco.transfer.model.TransferTask;
 import static com.mediatoolkit.pareco.util.Util.runIgnoreException;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import static java.util.Collections.singletonList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -54,8 +61,8 @@ import org.springframework.stereotype.Component;
 @AllArgsConstructor
 public class UploadTransferExecutor {
 
-	private final ThreadFactory chunkThreadFactory = new CustomizableThreadFactory("chunk_uploader_");
-	private final ThreadFactory fileThreadFactory = new CustomizableThreadFactory("file_uploader_");
+	private final ThreadFactory chunkThreadFactory = new CustomizableThreadFactory("ChunkUpload_");
+	private final ThreadFactory fileThreadFactory = new CustomizableThreadFactory("FileUpload_");
 
 	private final UnexpectedFilesDeleter unexpectedFilesDeleter;
 	private final FileSizeClassifier fileSizeClassifier;
@@ -200,11 +207,10 @@ public class UploadTransferExecutor {
 				);
 				List<CompletableFuture<Void>> chunkCompletables = new ArrayList<>();
 				for (ChunkInfo chunkInfo : chunkInfos) {
-					byte[] localChunkDigest = localFileChunkDigests.get(chunkInfo);
-					byte[] remoteChunkDigest = remoteFileChunkDigests.get(chunkInfo);
-					if (localChunkDigest != null && remoteChunkDigest != null && Arrays.equals(localChunkDigest, remoteChunkDigest)) {
-						//skipping transfer of whole chunk
-						progressListener.fileChunkSkipped(filePath, chunkInfo);
+					boolean skipChunk = fileTransferFilter.skipChunkIfNeeded(
+						localFileChunkDigests, remoteFileChunkDigests, filePath, chunkInfo, progressListener
+					);
+					if (skipChunk) {
 						continue;
 					}
 					chunkCompletables.add(CompletableFuture.runAsync(
@@ -212,7 +218,19 @@ public class UploadTransferExecutor {
 						chunkUploadService
 					));
 				}
-				chunkCompletables.forEach(CompletableFuture::join);
+				try {
+					chunkCompletables.forEach(CompletableFuture::join);
+				} catch (CompletionException completionEx) {
+					Throwable cause = completionEx.getCause();
+					if (cause instanceof FileDeletedException) {
+						fileUploadSessionClient.deleteFile();
+						progressListener.fileDeleted(filePath);
+					} else {
+						throw new UnknownTransferException(cause);
+					}
+				} finally {
+					chunkCompletables.forEach(future -> future.cancel(false));
+				}
 			}
 			fileUploadSessionClient.commitFileUpload();
 			progressListener.fileCompleted(filePath);
@@ -233,6 +251,8 @@ public class UploadTransferExecutor {
 					chunkInputStream, numBytes -> progressListener.fileChunkTransferProgress(filePath, chunkInfo, numBytes)
 				);
 				fileUploadSessionClient.uploadChunk(chunkInfo, observableChunkInputStream);
+			} catch (FileNotFoundException ex) {
+				throw new FileDeletedException(filePath, "Can't upload chunk of deleted file", ex);
 			} catch (IOException ex) {
 				throw new UncheckedIOException(ex);
 			}

@@ -24,4 +24,11 @@ public class ErrorBody {
 	private String error;
 	private String message;
 	private String path;
+	private Type type;
+
+	public enum Type {
+		FILE_DELETED,
+		ILLEGAL_STATE,
+		UNKNOWN
+	}
 }

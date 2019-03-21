@@ -1,8 +1,10 @@
 package com.mediatoolkit.pareco;
 
 import com.google.common.collect.Sets;
+import com.mediatoolkit.pareco.model.ChunkInfo;
 import com.mediatoolkit.pareco.model.DigestType;
 import com.mediatoolkit.pareco.model.DirectoryMetadata;
+import com.mediatoolkit.pareco.model.DirectoryStructure;
 import com.mediatoolkit.pareco.model.FilePath;
 import com.mediatoolkit.pareco.progress.CompositeTransferProgressListener;
 import com.mediatoolkit.pareco.progress.LoggingTransferProgressListener;
@@ -27,9 +29,11 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.annotation.PostConstruct;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.SneakyThrows;
@@ -39,6 +43,7 @@ import one.util.streamex.EntryStream;
 import one.util.streamex.StreamEx;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
+import org.assertj.core.api.SoftAssertions;
 import org.assertj.core.util.Files;
 import org.junit.After;
 import org.junit.Before;
@@ -58,7 +63,8 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 	classes = {ParecoServer.class, ParecoClient.class},
 	webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
 	properties = {
-		"session.expire.max_inactive=10000"
+		"session.expire.max_inactive=10000",
+		"session.auto-expire.enabled=false"
 	}
 )
 @ActiveProfiles("test")
@@ -110,7 +116,7 @@ public abstract class BaseIntegration {
 		delete(baseTestWorkspace);
 	}
 
-	void delete(File file) {
+	static void delete(File file) {
 		Files.delete(file);
 	}
 
@@ -121,7 +127,7 @@ public abstract class BaseIntegration {
 	}
 
 	@SneakyThrows
-	void writeToFile(
+	static void writeToFile(
 		String rootDir, FilePath filePath, String content
 	) {
 		File dir = new File(rootDir + File.separator + filePath.getRelativeDirectory());
@@ -131,7 +137,10 @@ public abstract class BaseIntegration {
 		}
 	}
 
-	ProgressListener newProgressListener() {
+	ProgressListener newProgressListener(
+		TransferContext transferContext,
+		InjectingActions injectingActions
+	) {
 		StatsRecordingTransferProgressListener statsProgressListener = new StatsRecordingTransferProgressListener();
 		LoggingTransferProgressListener loggingProgressListener = LoggingTransferProgressListener.builder()
 			.forceColors(true)
@@ -139,9 +148,13 @@ public abstract class BaseIntegration {
 			.speedometer(new Speedometer())
 			.loggingFilter(LoggingFilter.CHUNKS)
 			.build();
+		TransferListenerAction transferListenerAction = injectingActions != null
+			? new TransferListenerAction(transferContext, injectingActions)
+			: null;
 		return ProgressListener.builder()
 			.loggingProgressListener(loggingProgressListener)
 			.statsProgressListener(statsProgressListener)
+			.transferListenerAction(transferListenerAction)
 			.build();
 	}
 
@@ -151,10 +164,11 @@ public abstract class BaseIntegration {
 
 		private LoggingTransferProgressListener loggingProgressListener;
 		private StatsRecordingTransferProgressListener statsProgressListener;
+		private TransferListenerAction transferListenerAction;
 
 		public TransferProgressListener toCompositeListener() {
 			return CompositeTransferProgressListener.of(StreamEx
-				.of(statsProgressListener, loggingProgressListener)
+				.of(statsProgressListener, loggingProgressListener, transferListenerAction)
 				.nonNull()
 				.toList()
 			);
@@ -163,8 +177,8 @@ public abstract class BaseIntegration {
 	}
 
 	protected void evalTransferTestCase(TransferTestCase transferTestCase) {
-		testUpload(transferTestCase);
 		testDownload(transferTestCase);
+		testUpload(transferTestCase);
 	}
 
 	@SneakyThrows
@@ -172,10 +186,13 @@ public abstract class BaseIntegration {
 		before();
 		String localSrcDir = createRootDir("localSrc");
 		String remoteDestDir = createRootDir("remoteDest");
+		TransferContext transferContext = new TransferContext(localSrcDir, remoteDestDir);
 
 		createDirContents(localSrcDir, testCase.getSourceContents());
 		createDirContents(remoteDestDir, testCase.getDestinationContents());
-		ProgressListener progressListener = newProgressListener();
+		ProgressListener progressListener = newProgressListener(
+			transferContext, testCase.injectingActions
+		);
 
 		TransferTask transferTask = testCase.getTransferTask()
 			.withLocalRootDirectory(localSrcDir)
@@ -183,15 +200,17 @@ public abstract class BaseIntegration {
 		uploader.executeUpload(transferTask, progressListener.toCompositeListener());
 
 		StatsRecordingTransferProgressListener stats = progressListener.getStatsProgressListener();
-		assertThat(stats.getTransferredFiles()).as("transferred files").isEqualTo(testCase.getTransferredFiles());
-		assertThat(stats.getSkippedFiles()).as("skipped files").isEqualTo(testCase.getSkippedFiles());
-		assertThat(stats.getTransferredBytes()).as("transferred bytes").isEqualTo(testCase.getTransferredBytes());
-		assertThat(stats.getSkippedBytes()).as("skipped bytes").isEqualTo(testCase.getSkippedBytes());
-		assertThat(stats.getDeletedFiles()).as("deleted files").isEqualTo(testCase.getDeletedFiles());
-		assertThat(stats.getDeletedDirectories()).as("deleted directories").isEqualTo(testCase.getDeletedDirs());
-
-		assertDirContents(localSrcDir, testCase.getSourceContents());
-		assertDirContents(remoteDestDir, testCase.getExpectedDestinationContents());
+		SoftAssertions soft = new SoftAssertions();
+		soft.assertThat(stats.getTransferredFiles()).as("transferred files").isEqualTo(testCase.getTransferredFiles());
+		soft.assertThat(stats.getSkippedFiles()).as("skipped files").isEqualTo(testCase.getSkippedFiles());
+		soft.assertThat(stats.getTransferredBytes()).as("transferred bytes").isEqualTo(testCase.getTransferredBytes());
+		soft.assertThat(stats.getSkippedBytes()).as("skipped bytes").isEqualTo(testCase.getSkippedBytes());
+		soft.assertThat(stats.getDeletedFiles()).as("deleted files").isEqualTo(testCase.getDeletedFiles());
+		soft.assertThat(stats.getDeletedDirectories()).as("deleted directories").isEqualTo(testCase.getDeletedDirs());
+		soft.assertThat(stats.getConcurrentDeletions()).as("concurrent deletions").isEqualTo(testCase.getDeletedConcurrently());
+		assertDirContents(soft, localSrcDir, testCase.getSourceContents());
+		assertDirContents(soft, remoteDestDir, testCase.getExpectedDestinationContents());
+		soft.assertAll();
 	}
 
 	@SneakyThrows
@@ -199,10 +218,13 @@ public abstract class BaseIntegration {
 		before();
 		String localDestDir = createRootDir("localDest");
 		String remoteSrcDir = createRootDir("remoteSrcDest");
+		TransferContext transferContext = new TransferContext(remoteSrcDir, localDestDir);
 
 		createDirContents(localDestDir, testCase.getDestinationContents());
 		createDirContents(remoteSrcDir, testCase.getSourceContents());
-		ProgressListener progressListener = newProgressListener();
+		ProgressListener progressListener = newProgressListener(
+			transferContext, testCase.injectingActions
+		);
 
 		TransferTask transferTask = testCase.getTransferTask()
 			.withLocalRootDirectory(localDestDir)
@@ -210,19 +232,21 @@ public abstract class BaseIntegration {
 		downloader.executeDownload(transferTask, progressListener.toCompositeListener());
 
 		StatsRecordingTransferProgressListener stats = progressListener.getStatsProgressListener();
-		assertThat(stats.getTransferredFiles()).as("transferred files").isEqualTo(testCase.getTransferredFiles());
-		assertThat(stats.getSkippedFiles()).as("skipped files").isEqualTo(testCase.getSkippedFiles());
-		assertThat(stats.getTransferredBytes()).as("transferred bytes").isEqualTo(testCase.getTransferredBytes());
-		assertThat(stats.getSkippedBytes()).as("skipped bytes").isEqualTo(testCase.getSkippedBytes());
-		assertThat(stats.getDeletedFiles()).as("deleted files").isEqualTo(testCase.getDeletedFiles());
-		assertThat(stats.getDeletedDirectories()).as("deleted directories").isEqualTo(testCase.getDeletedDirs());
-
-		assertDirContents(remoteSrcDir, testCase.getSourceContents());
-		assertDirContents(localDestDir, testCase.getExpectedDestinationContents());
+		SoftAssertions soft = new SoftAssertions();
+		soft.assertThat(stats.getTransferredFiles()).as("transferred files").isEqualTo(testCase.getTransferredFiles());
+		soft.assertThat(stats.getSkippedFiles()).as("skipped files").isEqualTo(testCase.getSkippedFiles());
+		soft.assertThat(stats.getTransferredBytes()).as("transferred bytes").isEqualTo(testCase.getTransferredBytes());
+		soft.assertThat(stats.getSkippedBytes()).as("skipped bytes").isEqualTo(testCase.getSkippedBytes());
+		soft.assertThat(stats.getDeletedFiles()).as("deleted files").isEqualTo(testCase.getDeletedFiles());
+		soft.assertThat(stats.getDeletedDirectories()).as("deleted directories").isEqualTo(testCase.getDeletedDirs());
+		soft.assertThat(stats.getConcurrentDeletions()).as("concurrent deletions").isEqualTo(testCase.getDeletedConcurrently());
+		assertDirContents(soft, remoteSrcDir, testCase.getSourceContents());
+		assertDirContents(soft, localDestDir, testCase.getExpectedDestinationContents());
+		soft.assertAll();
 	}
 
 	@SneakyThrows
-	private void assertDirContents(String rootDir, DirContents dirContents) {
+	private void assertDirContents(SoftAssertions soft, String rootDir, DirContents dirContents) {
 		Path rootPath = new File(rootDir).toPath();
 		String absoluteRootPath = rootPath.toAbsolutePath().toString();
 		java.nio.file.Files.walkFileTree(rootPath, new SimpleFileVisitor<Path>() {
@@ -234,12 +258,12 @@ public abstract class BaseIntegration {
 				FilePath dirFilePath = filePathOfPath(dir);
 				DirectoryMetadata dirMetadata = dirContents.getDirs().get(dirFilePath);
 				if (dirMetadata == null) {
-					fail("Did not expect to have directory: " + dir + " present in root dir: " + rootDir);
+					soft.fail("Did not expect to have directory: " + dir + " present in root dir: " + rootDir);
 				}
 				if (dirMetadata.getPermissions() != null) {
 					try {
 						Set<PosixFilePermission> currentPermissions = java.nio.file.Files.getPosixFilePermissions(dir);
-						assertThat(currentPermissions).as("Permissions of dir: " + dir).containsOnlyElementsOf(dirMetadata.getPermissions());
+						soft.assertThat(currentPermissions).as("Permissions of dir: " + dir).containsOnlyElementsOf(dirMetadata.getPermissions());
 					} catch (UnsupportedOperationException ignore) {
 					}
 				}
@@ -251,17 +275,17 @@ public abstract class BaseIntegration {
 				FilePath filePath = filePathOfPath(file);
 				FileContent fileContent = dirContents.getFiles().get(filePath);
 				if (fileContent == null) {
-					fail("Did not expect to have file: " + file + " present in root dir: " + rootDir);
+					soft.fail("Did not expect to have file: " + file + " present in root dir: " + rootDir);
 				}
 				String content = Files.contentOf(file.toFile(), Charset.forName("utf-8"));
-				assertThat(content).as("Content of: " + file).isEqualTo(fileContent.getContent());
+				soft.assertThat(content).as("Content of: " + file).isEqualTo(fileContent.getContent());
 				if (fileContent.getLastModified() != null) {
-					assertThat(attrs.lastModifiedTime()).as("Last modified time of: " + file).isEqualTo(FileTime.fromMillis(fileContent.getLastModified()));
+					soft.assertThat(attrs.lastModifiedTime()).as("Last modified time of: " + file).isEqualTo(FileTime.fromMillis(fileContent.getLastModified()));
 				}
 				if (fileContent.getPermissions() != null) {
 					try {
 						Set<PosixFilePermission> currentPermissions = java.nio.file.Files.getPosixFilePermissions(file);
-						assertThat(currentPermissions).as("Permissions of: " + file).containsOnlyElementsOf(fileContent.getPermissions());
+						soft.assertThat(currentPermissions).as("Permissions of: " + file).containsOnlyElementsOf(fileContent.getPermissions());
 					} catch (UnsupportedOperationException ignore) {
 					}
 				}
@@ -333,8 +357,10 @@ public abstract class BaseIntegration {
 		private long skippedBytes;
 		private int deletedFiles;
 		private int deletedDirs;
+		private int deletedConcurrently;
 		@NonNull
 		private final DirContents expectedDestinationContents;
+		private InjectingActions injectingActions;
 
 	}
 
@@ -445,6 +471,160 @@ public abstract class BaseIntegration {
 		private Long lastModified;
 		private Set<PosixFilePermission> permissions;
 
+	}
+
+	@Value
+	protected class TransferContext {
+
+		@NonNull
+		private String srcRootDir;
+		@NonNull
+		private String dstRotDir;
+
+		void deleteSrcFiles(String... filePaths) {
+			for (String filePath : filePaths) {
+				File file = new File(filePathOf(filePath).toAbsolutePath(srcRootDir));
+				delete(file);
+			}
+		}
+
+	}
+
+	protected interface InjectingAction<ARGS> {
+
+		void doAction(TransferContext ctx, ARGS args);
+	}
+
+	@Value
+	@Builder
+	protected static class InjectingActions {
+
+		private final InjectingAction<InitializingArg> onInitializing;
+		private final InjectingAction<StartedArg> onStarted;
+		private final InjectingAction<List<FilePath>> onDeletedFiles;
+		private final InjectingAction<List<FilePath>> onDeletedDirectories;
+		private final InjectingAction<FilePath> onFileAnalyze;
+		private final InjectingAction<FilePath> onFileSkipped;
+		private final InjectingAction<FilePath> onFileStarted;
+		private final InjectingAction<FilePath> onFileDeleted;
+		private final InjectingAction<FilePath> onFileCompleted;
+		private final InjectingAction<FileChunkArg> onChunkSkipped;
+		private final InjectingAction<FileChunkProgressArg> onChunkTransferProgress;
+		private final InjectingAction<FileChunkArg> onChunkTransferred;
+		private final InjectingAction<Void> onCompleted;
+		private final InjectingAction<Void> onAborted;
+	}
+
+	@Value
+	protected class InitializingArg {
+		String transferMode;
+		String sourceRootDir;
+		String destinationRootDir;
+	}
+
+	@Value
+	protected class StartedArg {
+		DirectoryStructure directoryStructure;
+		long chunkSizeBytes;
+	}
+
+	@Value
+	protected class FileChunkArg {
+		FilePath filePath;
+		ChunkInfo chunkInfo;
+	}
+
+	@Value
+	protected class FileChunkProgressArg {
+		FilePath filePath;
+		ChunkInfo chunkInfo;
+		long bytesTransferred;
+	}
+
+	@AllArgsConstructor
+	protected class TransferListenerAction implements TransferProgressListener {
+
+		@NonNull
+		private final TransferContext transferContext;
+		@NonNull
+		private final InjectingActions injectingActions;
+
+		private <ARG> void doAction(InjectingAction<ARG> injectingAction, ARG arg) {
+			if (injectingAction == null) {
+				return;
+			}
+			injectingAction.doAction(transferContext, arg);
+		}
+
+		@Override
+		public void initializing(String transferMode, String sourceRootDir, String destinationRootDir) {
+			doAction(injectingActions.onInitializing, new InitializingArg(transferMode, sourceRootDir, destinationRootDir));
+		}
+
+		@Override
+		public void started(DirectoryStructure directoryStructure, long chunkSizeBytes) {
+			doAction(injectingActions.onStarted, new StartedArg(directoryStructure, chunkSizeBytes));
+		}
+
+		@Override
+		public void deletedFiles(List<FilePath> filePaths) {
+			doAction(injectingActions.onDeletedFiles, filePaths);
+		}
+
+		@Override
+		public void deletedDirectories(List<FilePath> filePaths) {
+			doAction(injectingActions.onDeletedDirectories, filePaths);
+		}
+
+		@Override
+		public void fileAnalyze(FilePath filePath) {
+			doAction(injectingActions.onFileAnalyze, filePath);
+		}
+
+		@Override
+		public void fileSkipped(FilePath filePath) {
+			doAction(injectingActions.onFileSkipped, filePath);
+		}
+
+		@Override
+		public void fileStarted(FilePath filePath) {
+			doAction(injectingActions.onFileStarted, filePath);
+		}
+
+		@Override
+		public void fileDeleted(FilePath filePath) {
+			doAction(injectingActions.onFileDeleted, filePath);
+		}
+
+		@Override
+		public void fileCompleted(FilePath filePath) {
+			doAction(injectingActions.onFileCompleted, filePath);
+		}
+
+		@Override
+		public void fileChunkSkipped(FilePath filePath, ChunkInfo chunkInfo) {
+			doAction(injectingActions.onChunkSkipped, new FileChunkArg(filePath, chunkInfo));
+		}
+
+		@Override
+		public void fileChunkTransferProgress(FilePath filePath, ChunkInfo chunkInfo, long bytesTransferred) {
+			doAction(injectingActions.onChunkTransferProgress, new FileChunkProgressArg(filePath, chunkInfo, bytesTransferred));
+		}
+
+		@Override
+		public void fileChunkTransferred(FilePath filePath, ChunkInfo chunkInfo) {
+			doAction(injectingActions.onChunkTransferred, new FileChunkArg(filePath, chunkInfo));
+		}
+
+		@Override
+		public void completed() {
+			doAction(injectingActions.onCompleted, null);
+		}
+
+		@Override
+		public void aborted() {
+			doAction(injectingActions.onAborted, null);
+		}
 	}
 
 }
