@@ -148,10 +148,19 @@ public class LoggingTransferProgressListener implements TransferProgressListener
 	}
 
 	@Override
-	public void initializing(String transferMode, String sourceRootDir, String destinationRootDir) {
-		logTransfer("Initializing {} transfer", transferMode);
+	public void initializing(
+		String transferMode,
+		String sourceRootDir, String destinationRootDir,
+		String serverUrl
+	) {
+		logTransfer("Initializing _{}_ transfer", transferMode);
 		logTransfer("  - Source dir: '{}'", sourceRootDir);
 		logTransfer("  - Destination dir: '{}'", destinationRootDir);
+		logTransfer("Server '{}' connecting...", serverUrl);
+	}
+
+	@Override
+	public void analyzingFiles(String sourceRootDir, String destinationRootDir) {
 		logTransfer("Analyzing contents of directories...");
 	}
 
@@ -167,6 +176,7 @@ public class LoggingTransferProgressListener implements TransferProgressListener
 			logTransfer("Transfer task started");
 		} else {
 			logTransfer("Transfer task started, stats:");
+			logTransfer("  - Analysis duration: {}", durationPretty(Duration.ofMillis(statsListener.analyzeTotalTime())));
 			logTransfer("  - Num directories: {}", statsListener.getNumDirectories());
 			logTransfer("  - Num files: {}", statsListener.getNumFiles());
 			logTransfer("  - Total size: {}", fileSizePretty(statsListener.getTotalSize()));

@@ -11,7 +11,9 @@ import java.util.List;
  */
 public interface TransferProgressListener {
 
-	void initializing(String transferMode, String sourceRootDir, String destinationRootDir);
+	void initializing(String transferMode, String sourceRootDir, String destinationRootDir, String serverUrl);
+
+	void analyzingFiles(String sourceRootDir, String destinationRootDir);
 
 	void started(DirectoryStructure directoryStructure, long chunkSizeBytes);
 
@@ -42,7 +44,11 @@ public interface TransferProgressListener {
 	TransferProgressListener NO_OP_LISTENER = new TransferProgressListener() {
 
 		@Override
-		public void initializing(String transferMode, String sourceRootDir, String destinationRootDir) {
+		public void initializing(String transferMode, String sourceRootDir, String destinationRootDir, String serverUrl) {
+		}
+
+		@Override
+		public void analyzingFiles(String sourceRootDir, String destinationRootDir) {
 		}
 
 		@Override

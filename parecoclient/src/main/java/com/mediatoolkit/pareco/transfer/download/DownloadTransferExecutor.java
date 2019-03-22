@@ -92,13 +92,16 @@ public class DownloadTransferExecutor {
 			.encoding(encoding)
 			.build();
 		progressListener.initializing(
-			"download", transferTask.getRemoteRootDirectory(), transferTask.getLocalRootDirectory()
+			"download",
+			transferTask.getRemoteRootDirectory(), transferTask.getLocalRootDirectory(),
+			serverInfo.toUrl()
 		);
 		DownloadSessionClient downloadSessionClient = downloadClient.initializeDownload(
 			transferTask.getRemoteRootDirectory(), transferTask.getOptions().getChunkSizeBytes(),
 			transferTask.getInclude(), transferTask.getExclude()
 		);
 		exitTransferAborter.registerAbort(downloadSessionClient);
+		progressListener.analyzingFiles(transferTask.getRemoteRootDirectory(), transferTask.getLocalRootDirectory());
 		DirectoryStructure remoteDirectoryStructure = downloadSessionClient.getDirectoryStructure();
 		DirectoryStructure localDirectoryStructure = directoryStructureReader.readDirectoryStructure(
 			transferTask.getLocalRootDirectory(), transferTask.getInclude(), transferTask.getExclude()

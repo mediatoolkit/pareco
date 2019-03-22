@@ -40,8 +40,13 @@ public class CompositeTransferProgressListener implements TransferProgressListen
 	}
 
 	@Override
-	public void initializing(String transferMode, String sourceRootDir, String destinationRootDir) {
-		listeners.forEach(listener -> listener.initializing(transferMode, sourceRootDir, destinationRootDir));
+	public void initializing(String transferMode, String sourceRootDir, String destinationRootDir, String serverUrl) {
+		listeners.forEach(listener -> listener.initializing(transferMode, sourceRootDir, destinationRootDir, serverUrl));
+	}
+
+	@Override
+	public void analyzingFiles(String sourceRootDir, String destinationRootDir) {
+		listeners.forEach(listener -> listener.analyzingFiles(sourceRootDir, destinationRootDir));
 	}
 
 	@Override

@@ -24,6 +24,8 @@ public class StatsRecordingTransferProgressListener implements TransferProgressL
 	private long chunkSizeBytes;
 	private long timeStart;
 	private long timeEnd;
+	private long analyzeTimeStart;
+	private long analyzeTimeEnd;
 	private long skippedBytes;
 	private long transferredBytes;
 	private int skippedFiles;
@@ -50,6 +52,10 @@ public class StatsRecordingTransferProgressListener implements TransferProgressL
 		return timeEnd - timeStart;
 	}
 
+	public long analyzeTotalTime() {
+		return analyzeTimeEnd - analyzeTimeStart;
+	}
+
 	public FileTransferStats getFileStats(FilePath filePath) {
 		return filesStats.get(filePath);
 	}
@@ -59,12 +65,18 @@ public class StatsRecordingTransferProgressListener implements TransferProgressL
 	}
 
 	@Override
-	public void initializing(String transferMode, String sourceRootDir, String destinationRootDir) {
+	public void initializing(String transferMode, String sourceRootDir, String destinationRootDir, String serverUrl) {
 		timeStart = System.currentTimeMillis();
 	}
 
 	@Override
+	public void analyzingFiles(String sourceRootDir, String destinationRootDir) {
+		analyzeTimeStart = System.currentTimeMillis();
+	}
+
+	@Override
 	public void started(DirectoryStructure directoryStructure, long chunkSizeBytes) {
+		analyzeTimeEnd = System.currentTimeMillis();
 		this.directoryStructure = directoryStructure;
 		this.chunkSizeBytes = chunkSizeBytes;
 		fileMetadataMap = directoryStructure.filesMetadataAsMap();

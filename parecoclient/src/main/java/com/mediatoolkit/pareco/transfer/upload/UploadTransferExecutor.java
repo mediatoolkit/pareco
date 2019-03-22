@@ -86,7 +86,9 @@ public class UploadTransferExecutor {
 			.encoding(encoding)
 			.build();
 		progressListener.initializing(
-			"upload", transferTask.getLocalRootDirectory(), transferTask.getRemoteRootDirectory()
+			"upload",
+			transferTask.getLocalRootDirectory(), transferTask.getRemoteRootDirectory(),
+			serverInfo.toUrl()
 		);
 		DirectoryStructure localDirectoryStructure = directoryStructureReader.readDirectoryStructure(
 			transferTask.getLocalRootDirectory(), transferTask.getInclude(), transferTask.getExclude()
@@ -98,6 +100,7 @@ public class UploadTransferExecutor {
 			localDirectoryStructure
 		);
 		exitTransferAborter.registerAbort(uploadSessionClient);
+		progressListener.analyzingFiles(transferTask.getLocalRootDirectory(), transferTask.getRemoteRootDirectory());
 		DirectoryStructure remoteDirectoryStructure = uploadSessionClient.getDirectoryStructure();
 		Map<FilePath, FileMetadata> remoteFilesMetadata = remoteDirectoryStructure.filesMetadataAsMap();
 		int numTransferConnections = transferTask.getOptions().getNumTransferConnections();

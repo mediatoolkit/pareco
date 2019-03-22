@@ -500,6 +500,7 @@ public abstract class BaseIntegration {
 	protected static class InjectingActions {
 
 		private final InjectingAction<InitializingArg> onInitializing;
+		private final InjectingAction<AnalyzingFilesArg> onAnalyzingFiles;
 		private final InjectingAction<StartedArg> onStarted;
 		private final InjectingAction<List<FilePath>> onDeletedFiles;
 		private final InjectingAction<List<FilePath>> onDeletedDirectories;
@@ -518,6 +519,13 @@ public abstract class BaseIntegration {
 	@Value
 	protected class InitializingArg {
 		String transferMode;
+		String sourceRootDir;
+		String destinationRootDir;
+		String serverUrl;
+	}
+
+	@Value
+	protected class AnalyzingFilesArg {
 		String sourceRootDir;
 		String destinationRootDir;
 	}
@@ -557,8 +565,13 @@ public abstract class BaseIntegration {
 		}
 
 		@Override
-		public void initializing(String transferMode, String sourceRootDir, String destinationRootDir) {
-			doAction(injectingActions.onInitializing, new InitializingArg(transferMode, sourceRootDir, destinationRootDir));
+		public void initializing(String transferMode, String sourceRootDir, String destinationRootDir, String serverUrl) {
+			doAction(injectingActions.onInitializing, new InitializingArg(transferMode, sourceRootDir, destinationRootDir, serverUrl));
+		}
+
+		@Override
+		public void analyzingFiles(String sourceRootDir, String destinationRootDir) {
+			doAction(injectingActions.onAnalyzingFiles, new AnalyzingFilesArg(sourceRootDir, destinationRootDir));
 		}
 
 		@Override
