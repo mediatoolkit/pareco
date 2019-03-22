@@ -49,6 +49,9 @@ public class ParecoClient {
 			return;
 		}
 		TransferTask transferTask = options.toTransferTask();
+		if (options.isForceColors()) {
+			System.setProperty("spring.output.ansi.enabled", "ALWAYS");
+		}
 		try (ConfigurableApplicationContext ctx = new SpringApplicationBuilder(ParecoClient.class)
 			.logStartupInfo(false)
 			.bannerMode(Mode.OFF)

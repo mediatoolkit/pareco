@@ -64,7 +64,8 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 	webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
 	properties = {
 		"session.expire.max_inactive=10000",
-		"session.auto-expire.enabled=false"
+		"session.auto-expire.enabled=false",
+		"spring.output.ansi.enabled=ALWAYS"
 	}
 )
 @ActiveProfiles("test")
