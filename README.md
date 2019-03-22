@@ -64,6 +64,10 @@ and, more conveniently, in uncompressed directory
 
     parecodistribution/target/pareco-distribution-{version}/
 
+## Docker
+
+see documentation [here](README-DOCKER.md)
+
 ## Basic usage example
 
 Both, client and server offer help option to list available options: 
