@@ -90,9 +90,11 @@ public class LoggingTransferProgressListener implements TransferProgressListener
 
 	private String highlightMsg(String msg, Function<Ansi, Ansi> defaultFillSetter) {
 		String coloredMsg = msg
-			.replace("'{}'", defaultFillSetter.apply(ansi().fgBright(Color.BLUE).a("'{}'")).toString() + " ")    // add this extra white space to prevent color to overflow to next log messgae
+			.replace("'{}'", defaultFillSetter.apply(ansi().fgBright(Color.BLUE).a("'{}'")).toString())
 			.replaceAll("_(.+?)_", defaultFillSetter.apply(ansi().fgBright(Color.RED).a("$1")).toString());
-		return defaultFillSetter.apply(ansi()).a(coloredMsg).reset().toString();
+		String result = defaultFillSetter.apply(ansi()).a(coloredMsg).reset().toString();
+		// add this extra white space to prevent color to overflow to next log messgae
+		return result + ansi().a(" ").reset();
 	}
 
 	@Builder
@@ -270,7 +272,7 @@ public class LoggingTransferProgressListener implements TransferProgressListener
 			totalProgressPercent(), fileRank(filePath), fileSizePretty(fileSize),
 			durationPretty(Duration.ofMillis(fileStats.totalTime())),
 			fileSizePretty(effectiveSpeed) + "/s",
-			percentSkipped+"%",
+			percentSkipped + "%",
 			filePath
 		);
 	}
