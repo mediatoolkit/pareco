@@ -9,7 +9,6 @@ import com.mediatoolkit.pareco.components.RandomAccessFilePool.Mode;
 import com.mediatoolkit.pareco.components.RandomAccessFilePool.ReturnableRandomAccessFile;
 import com.mediatoolkit.pareco.components.TransferNamesEncoding;
 import com.mediatoolkit.pareco.exceptions.FileDeletedException;
-import com.mediatoolkit.pareco.exceptions.ParecoException;
 import com.mediatoolkit.pareco.exceptions.UnknownTransferException;
 import com.mediatoolkit.pareco.model.ChunkInfo;
 import com.mediatoolkit.pareco.model.DirectoryStructure;
@@ -17,11 +16,10 @@ import com.mediatoolkit.pareco.model.FileMetadata;
 import com.mediatoolkit.pareco.model.FilePath;
 import com.mediatoolkit.pareco.model.FileStatus;
 import com.mediatoolkit.pareco.progress.TransferProgressListener;
-import com.mediatoolkit.pareco.restclient.TransferClientException.ServerSideTransferClientException.FileDeletedOnServerSideException;
 import com.mediatoolkit.pareco.restclient.UploadClient;
 import com.mediatoolkit.pareco.restclient.UploadClient.FileUploadSessionClient;
 import com.mediatoolkit.pareco.restclient.UploadClient.UploadSessionClient;
-import com.mediatoolkit.pareco.transfer.ExitTransferAborter;
+import com.mediatoolkit.pareco.transfer.exit.TransferAbortTrigger;
 import com.mediatoolkit.pareco.transfer.FileSizeClassifier;
 import com.mediatoolkit.pareco.transfer.FileTransferFilter;
 import com.mediatoolkit.pareco.transfer.UnexpectedFilesDeleter;
@@ -37,9 +35,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
-import static java.util.Collections.singletonList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -69,11 +65,11 @@ public class UploadTransferExecutor {
 	private final FileTransferFilter fileTransferFilter;
 	private final DirectoryStructureReader directoryStructureReader;
 	private final ChunkInfosGenerator chunkInfosGenerator;
-	private final ExitTransferAborter exitTransferAborter;
 	private final TransferNamesEncoding encoding;
 
 	public void executeUpload(
 		TransferTask transferTask,
+		TransferAbortTrigger abortTrigger,
 		TransferProgressListener progressListener
 	) throws IOException {
 		ServerInfo serverInfo = transferTask.getServerInfo();
@@ -81,17 +77,18 @@ public class UploadTransferExecutor {
 			.httpScheme(serverInfo.getHttpScheme())
 			.host(serverInfo.getHost())
 			.port(serverInfo.getPort())
-			.timeout(transferTask.getOptions().getTimeout())
+			.connectTimeout(transferTask.getOptions().getConnectTimeout())
+			.readTimeout(transferTask.getOptions().getTimeout())
 			.authToken(transferTask.getAuthToken())
 			.encoding(encoding)
 			.build();
+		DirectoryStructure localDirectoryStructure = directoryStructureReader.readDirectoryStructure(
+			transferTask.getLocalRootDirectory(), transferTask.getInclude(), transferTask.getExclude()
+		);
 		progressListener.initializing(
 			"upload",
 			transferTask.getLocalRootDirectory(), transferTask.getRemoteRootDirectory(),
 			serverInfo.toUrl()
-		);
-		DirectoryStructure localDirectoryStructure = directoryStructureReader.readDirectoryStructure(
-			transferTask.getLocalRootDirectory(), transferTask.getInclude(), transferTask.getExclude()
 		);
 		UploadSessionClient uploadSessionClient = uploadClient.initializeUpload(
 			transferTask.getRemoteRootDirectory(),
@@ -99,7 +96,7 @@ public class UploadTransferExecutor {
 			transferTask.getInclude(), transferTask.getExclude(),
 			localDirectoryStructure
 		);
-		exitTransferAborter.registerAbort(uploadSessionClient);
+		abortTrigger.registerAbort(uploadSessionClient::abortUpload);
 		progressListener.analyzingFiles(transferTask.getLocalRootDirectory(), transferTask.getRemoteRootDirectory());
 		DirectoryStructure remoteDirectoryStructure = uploadSessionClient.getDirectoryStructure();
 		Map<FilePath, FileMetadata> remoteFilesMetadata = remoteDirectoryStructure.filesMetadataAsMap();

@@ -2,25 +2,24 @@ package com.mediatoolkit.pareco;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParameterException;
-import com.mediatoolkit.pareco.commandline.ServerCommandLineOptions;
+import com.mediatoolkit.pareco.commandline.RunnerCommandLineOptions;
 import java.util.Properties;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.Banner.Mode;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 
 /**
  * @author Antonio Tomac, <antonio.tomac@mediatoolkit.com>
- * @since 29/10/2018
+ * @since 2019-03-23
  */
 @SpringBootApplication
 @Slf4j
-public class ParecoServer {
+public class ParecoClientRunner {
 
 	public static void main(String[] args) {
-		ServerCommandLineOptions options;
+		RunnerCommandLineOptions options;
 		try {
-			options = new ServerCommandLineOptions();
+			options = new RunnerCommandLineOptions();
 			JCommander jCommander = JCommander.newBuilder()
 				.addObject(options)
 				.programName("./pareco-server.sh")
@@ -37,14 +36,7 @@ public class ParecoServer {
 		}
 		Properties properties = new Properties();
 		properties.setProperty("server.port", String.valueOf(options.getPort()));
-		properties.setProperty("auth.token.generate", String.valueOf(options.isGenerateToken()));
-		properties.setProperty("session.expire.max_inactive", String.valueOf(options.getSessionExpire()));
-		if (options.getAuthToken() != null) {
-			properties.setProperty("auth.token", options.getAuthToken());
-		}
-		new SpringApplicationBuilder(ParecoServer.class)
-			.logStartupInfo(false)
-			.bannerMode(Mode.OFF)
+		new SpringApplicationBuilder(ParecoClientRunner.class)
 			.properties(properties)
 			.run(args);
 	}

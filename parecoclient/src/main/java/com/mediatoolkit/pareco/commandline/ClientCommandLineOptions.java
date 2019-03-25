@@ -6,11 +6,13 @@ import com.beust.jcommander.Parameters;
 import com.mediatoolkit.pareco.model.DigestType;
 import com.mediatoolkit.pareco.progress.TransferLoggingLevel;
 import com.mediatoolkit.pareco.transfer.model.ServerInfo;
+import com.mediatoolkit.pareco.transfer.model.TransferJob;
 import com.mediatoolkit.pareco.transfer.model.TransferMode;
 import com.mediatoolkit.pareco.transfer.model.TransferOptions;
 import com.mediatoolkit.pareco.transfer.model.TransferOptions.FileIntegrityOptions;
 import com.mediatoolkit.pareco.transfer.model.TransferTask;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +26,8 @@ import lombok.extern.slf4j.Slf4j;
 @NoArgsConstructor
 @Parameters(separators = " =")
 @Slf4j
-public class CommandLineOptions {
+@Builder(toBuilder = true)
+public class ClientCommandLineOptions {
 
 	@Parameter(names = {"-m", "--mode"}, required = true, description = "Transfer mode to execute", order = 1)
 	private TransferMode mode;
@@ -53,8 +56,11 @@ public class CommandLineOptions {
 	@Parameter(names = {"-n", "--numConnections"}, description = "Number of parallel transport connections", order = 5)
 	private int numTransferConnections = 10;
 
-	@Parameter(names = {"-t", "--timeout"}, description = "Connect and read timeout on connections in milliseconds", order = 5)
+	@Parameter(names = {"-t", "--timeout"}, description = "Read timeout on connections in milliseconds", order = 5)
 	private int timeout = 120_000;
+
+	@Parameter(names = {"-ct", "--connectTimeout"}, description = "Connect and timeout on connections in milliseconds", order = 6)
+	private int connectTimeout = 5_000;
 
 	@Parameter(
 		names = {"-del", "--deleteUnexpected"},
@@ -108,6 +114,9 @@ public class CommandLineOptions {
 		} else if (chunkSizeBytes < 1024) {
 			log.warn("Chunk size is very low ({} bytes) performance might be poor", chunkSizeBytes);
 		}
+		if (connectTimeout < 0) {
+			throw new ParameterException("Connect timeout must not be negative, got: " + timeout);
+		}
 		if (timeout < 0) {
 			throw new ParameterException("Timeout must not be negative, got: " + timeout);
 		}
@@ -129,9 +138,20 @@ public class CommandLineOptions {
 				.deleteUnexpected(deleteUnexpected)
 				.numTransferConnections(numTransferConnections)
 				.timeout(timeout)
+				.connectTimeout(connectTimeout)
 				.fileIntegrityOptions(fileIntegrityOptions)
 				.build()
 			)
+			.build();
+	}
+
+	public TransferJob toTransferJob() {
+		return TransferJob.builder()
+			.transferMode(mode)
+			.transferTask(toTransferTask())
+			.loggingLevel(loggingLevel)
+			.noTransferStats(noTransferStats)
+			.forceColors(forceColors)
 			.build();
 	}
 

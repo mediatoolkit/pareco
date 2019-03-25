@@ -36,5 +36,11 @@ additional concerns are port mappings and volume mounts.
         -l /mount/client -r /mount/server \
         --forceColors
 
+## Starting basic client web UI service
 
+    docker run \
+        -v /my/cli/host/path:/mount/client \
+        -p 54321:8888
+        pareco:latest \
+        /pareco-cli-runner.sh -p 8888
 

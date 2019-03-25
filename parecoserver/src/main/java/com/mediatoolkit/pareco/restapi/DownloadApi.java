@@ -31,9 +31,6 @@ public class DownloadApi {
 	private final TransferNamesEncoding encoding;
 
 	private String decode(String val) {
-		if (val == null) {
-			return null;
-		}
 		return encoding.decode(val);
 	}
 

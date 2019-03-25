@@ -15,7 +15,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Parameters(separators = " =")
-public class CommandLineOptions {
+public class ServerCommandLineOptions {
 
 	@Parameter(names = {"-p", "--port"}, description = "Port to listen on for incoming http requests, port=0 means random available", order = 1)
 	private int port = 0;

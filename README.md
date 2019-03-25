@@ -85,7 +85,13 @@ after server has successfully started, initiate transfer with client:
         --localDir my-local-directory \
         --remoteDir my-remote-directory \
         --server http://my.server.com:8080
-  
+
+or, instead of command line client, start a basic web UI client wrapper:
+
+    ./pareco-cli-runner.sh --port 8080
+    
+and open `http://localhost:8080` in browser
+
 client will execute upload of all files and directories within its 
 `my-local-directory` to server into its local directory `my-remote-directory`.
 
@@ -237,7 +243,7 @@ which are deleted since first download transfer.
  
 ## Requirements
  
-Pareco requires java 8 runtime.
+Pareco requires java 8 runtime, or Docker engine
 
 ## Licence
 

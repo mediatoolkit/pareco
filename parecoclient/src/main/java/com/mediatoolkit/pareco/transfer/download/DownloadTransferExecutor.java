@@ -11,7 +11,6 @@ import com.mediatoolkit.pareco.components.RandomAccessFilePool;
 import com.mediatoolkit.pareco.components.RandomAccessFilePool.Mode;
 import com.mediatoolkit.pareco.components.RandomAccessFilePool.ReturnableRandomAccessFile;
 import com.mediatoolkit.pareco.components.TransferNamesEncoding;
-import com.mediatoolkit.pareco.exceptions.FileDeletedException;
 import com.mediatoolkit.pareco.exceptions.UnknownTransferException;
 import com.mediatoolkit.pareco.model.ChunkInfo;
 import com.mediatoolkit.pareco.model.DirectoryStructure;
@@ -23,7 +22,7 @@ import com.mediatoolkit.pareco.restclient.DownloadClient;
 import com.mediatoolkit.pareco.restclient.DownloadClient.DownloadSessionClient;
 import com.mediatoolkit.pareco.restclient.DownloadClient.FileDownloadSessionClient;
 import com.mediatoolkit.pareco.restclient.TransferClientException.ServerSideTransferClientException.FileDeletedOnServerSideException;
-import com.mediatoolkit.pareco.transfer.ExitTransferAborter;
+import com.mediatoolkit.pareco.transfer.exit.TransferAbortTrigger;
 import com.mediatoolkit.pareco.transfer.FileSizeClassifier;
 import com.mediatoolkit.pareco.transfer.FileTransferFilter;
 import com.mediatoolkit.pareco.transfer.UnexpectedFilesDeleter;
@@ -39,7 +38,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import static java.util.Collections.singletonList;
 import java.util.List;
@@ -75,11 +73,11 @@ public class DownloadTransferExecutor {
 	private final FileChunkWriter fileChunkWriter;
 	private final ChunkInfosGenerator chunkInfosGenerator;
 	private final MetadataWriter metadataWriter;
-	private final ExitTransferAborter exitTransferAborter;
 	private final TransferNamesEncoding encoding;
 
 	public void executeDownload(
 		TransferTask transferTask,
+		TransferAbortTrigger abortTrigger,
 		TransferProgressListener progressListener
 	) throws IOException {
 		ServerInfo serverInfo = transferTask.getServerInfo();
@@ -87,7 +85,8 @@ public class DownloadTransferExecutor {
 			.httpScheme(serverInfo.getHttpScheme())
 			.host(serverInfo.getHost())
 			.port(serverInfo.getPort())
-			.timeout(transferTask.getOptions().getTimeout())
+			.connectTimeout(transferTask.getOptions().getConnectTimeout())
+			.readTimeout(transferTask.getOptions().getTimeout())
 			.authToken(transferTask.getAuthToken())
 			.encoding(encoding)
 			.build();
@@ -100,7 +99,7 @@ public class DownloadTransferExecutor {
 			transferTask.getRemoteRootDirectory(), transferTask.getOptions().getChunkSizeBytes(),
 			transferTask.getInclude(), transferTask.getExclude()
 		);
-		exitTransferAborter.registerAbort(downloadSessionClient);
+		abortTrigger.registerAbort(downloadSessionClient::abortDownload);
 		progressListener.analyzingFiles(transferTask.getRemoteRootDirectory(), transferTask.getLocalRootDirectory());
 		DirectoryStructure remoteDirectoryStructure = downloadSessionClient.getDirectoryStructure();
 		DirectoryStructure localDirectoryStructure = directoryStructureReader.readDirectoryStructure(

@@ -2,21 +2,19 @@ package com.mediatoolkit.pareco;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParameterException;
-import com.mediatoolkit.pareco.commandline.CommandLineOptions;
+import com.mediatoolkit.pareco.commandline.ClientCommandLineOptions;
 import com.mediatoolkit.pareco.exceptions.ParecoException;
-import com.mediatoolkit.pareco.progress.TransferProgressListener;
-import com.mediatoolkit.pareco.progress.TransferProgressListenerFactory;
-import com.mediatoolkit.pareco.transfer.download.DownloadTransferExecutor;
-import com.mediatoolkit.pareco.transfer.model.TransferTask;
-import com.mediatoolkit.pareco.transfer.upload.UploadTransferExecutor;
-import java.io.IOException;
-import java.util.concurrent.CompletionException;
+import com.mediatoolkit.pareco.progress.log.LoggingAppender;
+import com.mediatoolkit.pareco.progress.log.Slf4jLoggingAppender;
+import com.mediatoolkit.pareco.transfer.TransferService;
+import com.mediatoolkit.pareco.transfer.exit.JvmExitAbortTrigger;
+import com.mediatoolkit.pareco.transfer.exit.TransferAbortTrigger;
+import com.mediatoolkit.pareco.transfer.model.TransferJob;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.Banner.Mode;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.web.client.RestClientException;
 
 /**
  * @author Antonio Tomac, <antonio.tomac@mediatoolkit.com>
@@ -27,9 +25,9 @@ import org.springframework.web.client.RestClientException;
 public class ParecoClient {
 
 	public static void main(String[] args) {
-		CommandLineOptions options;
+		ClientCommandLineOptions options;
 		try {
-			options = new CommandLineOptions();
+			options = new ClientCommandLineOptions();
 			JCommander jCommander = JCommander.newBuilder()
 				.addObject(options)
 				.programName("./pareco-cli.sh")
@@ -48,30 +46,23 @@ public class ParecoClient {
 			log.error(ex.toString());
 			return;
 		}
-		TransferTask transferTask = options.toTransferTask();
+		TransferJob transferJob = options.toTransferJob();
 		if (options.isForceColors()) {
 			System.setProperty("spring.output.ansi.enabled", "ALWAYS");
 		}
+		LoggingAppender loggingAppender = new Slf4jLoggingAppender("Transfer", options.isForceColors());
+		TransferAbortTrigger abortTrigger = new JvmExitAbortTrigger();
 		try (ConfigurableApplicationContext ctx = new SpringApplicationBuilder(ParecoClient.class)
 			.logStartupInfo(false)
 			.bannerMode(Mode.OFF)
 			.run(args)
 		) {
-			TransferProgressListener progressListener = ctx.getBean(TransferProgressListenerFactory.class)
-				.createTransferProgressListener(
-					options.getLoggingLevel(), !options.isNoTransferStats(), options.isForceColors()
-				);
-			switch (options.getMode()) {
-				case upload:
-					ctx.getBean(UploadTransferExecutor.class).executeUpload(transferTask, progressListener);
-					break;
-				case download:
-					ctx.getBean(DownloadTransferExecutor.class).executeDownload(transferTask, progressListener);
-					break;
-			}
-		} catch (IOException | RestClientException | ParecoException | CompletionException ex) {
+			ctx.getBean(TransferService.class).execTransfer(
+				transferJob, loggingAppender, abortTrigger
+			);
+		} catch (ParecoException ex) {
 			log.warn("Transfer failed");
-			log.error("Fail cause: {}", ex.toString());
+			log.error("Fail cause:\n{}", ex.toString().replace(":", ":\n    "));
 		}
 	}
 

@@ -14,11 +14,17 @@ public class TransferNamesEncoding {
 
 	@SneakyThrows
 	public String encode(String val) {
+		if (val == null) {
+			return null;
+		}
 		return URLEncoder.encode(val, "utf-8");
 	}
 
 	@SneakyThrows
 	public String decode(String val) {
+		if (val == null) {
+			return null;
+		}
 		return URLDecoder.decode(val, "utf-8");
 	}
 }

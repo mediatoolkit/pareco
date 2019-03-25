@@ -5,24 +5,23 @@ import com.mediatoolkit.pareco.model.DirectoryStructure;
 import com.mediatoolkit.pareco.model.FileMetadata;
 import com.mediatoolkit.pareco.model.FilePath;
 import com.mediatoolkit.pareco.progress.StatsRecordingTransferProgressListener.FileTransferStats;
+import com.mediatoolkit.pareco.progress.log.LoggingAppender;
+import com.mediatoolkit.pareco.progress.log.Message;
+import com.mediatoolkit.pareco.progress.log.Message.Format;
+import static com.mediatoolkit.pareco.progress.log.Message.highlight;
+import static com.mediatoolkit.pareco.progress.log.Message.msg;
+import static com.mediatoolkit.pareco.progress.log.Message.quote;
 import static com.mediatoolkit.pareco.util.Util.divRound1d;
 import static com.mediatoolkit.pareco.util.Util.durationPretty;
 import static com.mediatoolkit.pareco.util.Util.fileSizePretty;
 import static com.mediatoolkit.pareco.util.Util.round1d;
+import static java.lang.String.format;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
-import org.fusesource.jansi.Ansi;
-import static org.fusesource.jansi.Ansi.Color;
-import static org.fusesource.jansi.Ansi.ansi;
-import org.fusesource.jansi.AnsiConsole;
-import org.slf4j.Logger;
-import org.slf4j.Marker;
-import org.slf4j.MarkerFactory;
 
 
 /**
@@ -31,17 +30,10 @@ import org.slf4j.MarkerFactory;
  */
 public class LoggingTransferProgressListener implements TransferProgressListener {
 
-	private static final Logger log = org.slf4j.LoggerFactory.getLogger("Transfer");
-
-	private final Marker transferTaskMarker = MarkerFactory.getMarker("TRANSFER_TASK");
-	private final Marker deleteMarker = MarkerFactory.getMarker("DELETE");
-	private final Marker fileMarker = MarkerFactory.getMarker("FILE");
-	private final Marker chunkMarker = MarkerFactory.getMarker("CHUNK");
-	private final Marker speedMarker = MarkerFactory.getMarker("SPEED");
-
 	private final StatsRecordingTransferProgressListener statsListener;
 	private final Speedometer speedometer;
 	private final LoggingFilter loggingFilter;
+	private final LoggingAppender loggingAppender;
 
 	private Map<FilePath, FileMetadata> fileMetadataMap;
 	private long chunkSizeBytes;
@@ -63,54 +55,42 @@ public class LoggingTransferProgressListener implements TransferProgressListener
 		public static final LoggingFilter CHUNKS = new LoggingFilter(true, true, true, true);
 	}
 
-	private void logTransfer(String msg, Object... objects) {
-		msg = highlightMsg(msg, Ansi::fgBrightDefault);
-		log.info(transferTaskMarker, msg, objects);
+	private void logTransfer(Object... parts) {
+		Message msg = msg(Format.NONE, parts);
+		loggingAppender.addMsg("TRANSFER_TASK", msg);
 	}
 
-	private void logDelete(String msg, Object... objects) {
-		msg = highlightMsg(msg, Ansi::fgBrightYellow);
-		log.info(deleteMarker, msg, objects);
+	private void logDelete(Object... parts) {
+		Message msg = msg(Format.DELETE, parts);
+		loggingAppender.addMsg("DELETE", msg);
 	}
 
-	private void logFile(String msg, Object... objects) {
-		msg = highlightMsg(msg, Ansi::fgBrightCyan);
-		log.info(fileMarker, msg, objects);
+	private void logFile(Object... parts) {
+		Message msg = msg(Format.FILE, parts);
+		loggingAppender.addMsg("FILE", msg);
 	}
 
-	private void logChunk(String msg, Object... objects) {
-		msg = highlightMsg(msg, Ansi::fgBlack);
-		log.info(chunkMarker, msg, objects);
+	private void logChunk(Object... parts) {
+		Message msg = msg(Format.CHUNK, parts);
+		loggingAppender.addMsg("CHUNK", msg);
 	}
 
-	private void logSpeed(String msg, Object... objects) {
-		msg = highlightMsg(msg, Ansi::fgBrightGreen);
-		log.info(speedMarker, msg, objects);
-	}
-
-	private String highlightMsg(String msg, Function<Ansi, Ansi> defaultFillSetter) {
-		String coloredMsg = msg
-			.replace("'{}'", defaultFillSetter.apply(ansi().fgBright(Color.BLUE).a("'{}'")).toString())
-			.replaceAll("_(.+?)_", defaultFillSetter.apply(ansi().fgBright(Color.RED).a("$1")).toString());
-		String result = defaultFillSetter.apply(ansi()).a(coloredMsg).reset().toString();
-		// add this extra white space to prevent color to overflow to next log messgae
-		return result + ansi().a(" ").reset();
+	private void logSpeed(Object... parts) {
+		Message msg = msg(Format.SPEED, parts);
+		loggingAppender.addMsg("SPEED", msg);
 	}
 
 	@Builder
 	private LoggingTransferProgressListener(
 		@NonNull LoggingFilter loggingFilter,
-		boolean forceColors,
+		@NonNull LoggingAppender loggingAppender,
 		StatsRecordingTransferProgressListener statsListener,
 		Speedometer speedometer
 	) {
 		this.statsListener = statsListener;
 		this.speedometer = speedometer;
 		this.loggingFilter = loggingFilter;
-		if (forceColors) {
-			System.setProperty("jansi.force", "true");
-		}
-		AnsiConsole.systemInstall();
+		this.loggingAppender = loggingAppender;
 	}
 
 	private String fileRank(FilePath filePath) {
@@ -155,10 +135,10 @@ public class LoggingTransferProgressListener implements TransferProgressListener
 		String sourceRootDir, String destinationRootDir,
 		String serverUrl
 	) {
-		logTransfer("Initializing _{}_ transfer", transferMode);
-		logTransfer("  - Source dir: '{}'", sourceRootDir);
-		logTransfer("  - Destination dir: '{}'", destinationRootDir);
-		logTransfer("Server '{}' connecting...", serverUrl);
+		logTransfer("Initializing ", highlight(transferMode), " transfer");
+		logTransfer("  - Source dir: ", quote(sourceRootDir));
+		logTransfer("  - Destination dir: ", quote(destinationRootDir));
+		logTransfer("Server ", quote(serverUrl), " connecting...");
 	}
 
 	@Override
@@ -178,10 +158,10 @@ public class LoggingTransferProgressListener implements TransferProgressListener
 			logTransfer("Transfer task started");
 		} else {
 			logTransfer("Transfer task started, stats:");
-			logTransfer("  - Analysis duration: {}", durationPretty(Duration.ofMillis(statsListener.analyzeTotalTime())));
-			logTransfer("  - Num directories: {}", statsListener.getNumDirectories());
-			logTransfer("  - Num files: {}", statsListener.getNumFiles());
-			logTransfer("  - Total size: {}", fileSizePretty(statsListener.getTotalSize()));
+			logTransfer("  - Analysis duration: ", durationPretty(Duration.ofMillis(statsListener.analyzeTotalTime())));
+			logTransfer("  - Num directories: ", statsListener.getNumDirectories());
+			logTransfer("  - Num files: ", statsListener.getNumFiles());
+			logTransfer("  - Total size: ", fileSizePretty(statsListener.getTotalSize()));
 		}
 		logTransfer("--------------------------------------------");
 	}
@@ -191,8 +171,8 @@ public class LoggingTransferProgressListener implements TransferProgressListener
 		if (!loggingFilter.isFiles()) {
 			return;
 		}
-		filePaths.forEach(filePath -> logDelete("Deleted unexpected file: '{}'", filePath));
-		logDelete("Deleted files: {}", filePaths.size());
+		filePaths.forEach(filePath -> logDelete("Deleted unexpected file: ", quote(filePath)));
+		logDelete("Deleted files: ", filePaths.size());
 	}
 
 	@Override
@@ -200,8 +180,8 @@ public class LoggingTransferProgressListener implements TransferProgressListener
 		if (!loggingFilter.isFiles()) {
 			return;
 		}
-		filePaths.forEach(filePath -> logDelete("Deleted unexpected directory: '{}'", filePath));
-		logDelete("Deleted directories: {}", filePaths.size());
+		filePaths.forEach(filePath -> logDelete("Deleted unexpected directory: ", quote(filePath)));
+		logDelete("Deleted directories: ", filePaths.size());
 	}
 
 	@Override
@@ -211,10 +191,11 @@ public class LoggingTransferProgressListener implements TransferProgressListener
 		}
 		long fileSize = fileMetadataMap.get(filePath).getFileSizeBytes();
 		if (statsListener == null) {
-			logFile("[{}] | Analyzing file: '{}'", fileSizePretty(fileSize), filePath);
+			logFile(format("[%s] | Analyzing file: ", fileSizePretty(fileSize)), quote(filePath));
 		}
-		logFile("Total: {}% | ({}) [{}] | Analyzing file: '{}'",
-			totalProgressPercent(), fileRank(filePath), fileSizePretty(fileSize), filePath
+		logFile(format("Total: %s%% | (%s) [%s] | Analyzing file: ",
+			totalProgressPercent(), fileRank(filePath), fileSizePretty(fileSize)),
+			quote(filePath)
 		);
 	}
 
@@ -225,10 +206,11 @@ public class LoggingTransferProgressListener implements TransferProgressListener
 		}
 		long fileSize = fileMetadataMap.get(filePath).getFileSizeBytes();
 		if (statsListener == null) {
-			logFile("[{}] | Skipping file: '{}'", fileSizePretty(fileSize), filePath);
+			logFile(format("[%s] | Skipping file: ", fileSizePretty(fileSize)), quote(filePath));
 		}
-		logFile("Total: {}% | ({}) [{}] | Skipping file: '{}'",
-			totalProgressPercent(), fileRank(filePath), fileSizePretty(fileSize), filePath
+		logFile(format("Total: %s%% | (%s) [%s] | Skipping file: ",
+			totalProgressPercent(), fileRank(filePath), fileSizePretty(fileSize)),
+			quote(filePath)
 		);
 	}
 
@@ -239,10 +221,11 @@ public class LoggingTransferProgressListener implements TransferProgressListener
 		}
 		long fileSize = fileMetadataMap.get(filePath).getFileSizeBytes();
 		if (statsListener == null) {
-			logFile("[{}] | Start transfer file: '{}'", fileSizePretty(fileSize), filePath);
+			logFile(format("[%s] | Start transfer file: ", fileSizePretty(fileSize)), quote(filePath));
 		}
-		logFile("Total: {}% | ({}) [{}] | Start transfer file: '{}'",
-			totalProgressPercent(), fileRank(filePath), fileSizePretty(fileSize), filePath
+		logFile(format("Total: %s%% | (%s) [%s] | Start transfer file: ",
+			totalProgressPercent(), fileRank(filePath), fileSizePretty(fileSize)),
+			quote(filePath)
 		);
 	}
 
@@ -252,7 +235,9 @@ public class LoggingTransferProgressListener implements TransferProgressListener
 			return;
 		}
 		long fileSize = fileMetadataMap.get(filePath).getFileSizeBytes();
-		logFile("[{}] | Deleted file because _source file_ is _DELETED_ '{}'", fileSizePretty(fileSize), filePath);
+		logFile("[", fileSizePretty(fileSize), "] | ",
+			"Deleted file because ", highlight("source file"), " is ", highlight("DELETED"), " ", quote(filePath)
+		);
 	}
 
 	@Override
@@ -262,18 +247,18 @@ public class LoggingTransferProgressListener implements TransferProgressListener
 		}
 		long fileSize = fileMetadataMap.get(filePath).getFileSizeBytes();
 		if (statsListener == null) {
-			logFile("[{}] | File done '{}'", fileSizePretty(fileSize), filePath);
+			logFile("[", fileSizePretty(fileSize), "] | File done ", quote(filePath));
 			return;
 		}
 		FileTransferStats fileStats = statsListener.getFileStats(filePath);
 		double effectiveSpeed = divRound1d(1000 * fileSize, fileStats.totalTime());
 		double percentSkipped = round1d(100. * fileStats.getSkippedBytes() / fileSize);
-		logFile("Total: {}% | ({}) [{}] | File done in {}, speed {}, skip: {} '{}'",
+		logFile(format("Total: %s%% | (%s) [%s] | File done in %s, speed %s, skip: %s ",
 			totalProgressPercent(), fileRank(filePath), fileSizePretty(fileSize),
 			durationPretty(Duration.ofMillis(fileStats.totalTime())),
 			fileSizePretty(effectiveSpeed) + "/s",
-			percentSkipped + "%",
-			filePath
+			percentSkipped + "%"),
+			quote(filePath)
 		);
 	}
 
@@ -285,15 +270,16 @@ public class LoggingTransferProgressListener implements TransferProgressListener
 		long fileSize = fileMetadataMap.get(filePath).getFileSizeBytes();
 		String chunkRank = chunkRank(filePath, chunkInfo);
 		if (statsListener == null) {
-			logChunk("[{}] | ({}) [{}] | Skipping chunk in file: '{}'",
-				fileSizePretty(fileSize), chunkRank, fileSizePretty(chunkInfo.getSizeBytes()), filePath
+			logChunk(format("[%s] | (%s) [%s] | Skipping chunk in file: ",
+				fileSizePretty(fileSize), chunkRank, fileSizePretty(chunkInfo.getSizeBytes())),
+				quote(filePath)
 			);
 			return;
 		}
-		logChunk("Total: {}% | ({}) [{}] | ({}) [{}] | Skipping chunk in file: '{}'",
+		logChunk(format("Total: %s%% | (%s) [%s] | (%s) [%s] | Skipping chunk in file: ",
 			totalProgressPercent(), fileRank(filePath), fileSizePretty(fileSize),
-			chunkRank, fileSizePretty(chunkInfo.getSizeBytes()),
-			filePath
+			chunkRank, fileSizePretty(chunkInfo.getSizeBytes())),
+			quote(filePath)
 		);
 	}
 
@@ -310,15 +296,15 @@ public class LoggingTransferProgressListener implements TransferProgressListener
 		if (acquirePrintSpeed(now)) {
 			double speed = round1d(speedometer.getSpeed());
 			if (statsListener == null) {
-				logSpeed("Speed: {}", fileSizePretty(speed) + "/s");
+				logSpeed("Speed: ", fileSizePretty(speed) + "/s");
 			} else {
 				Duration eta = etaDuration(speed);
 				String etaPretty = eta == null ? "--:--" : durationPretty(eta);
-				logSpeed("Total: {}% | Speed: {} ETA: {}",
+				logSpeed(format("Total: %s%% | Speed: %s ETA: %s",
 					totalProgressPercent(),
 					fileSizePretty(speed) + "/s",
 					etaPretty
-				);
+				));
 			}
 		}
 	}
@@ -340,15 +326,16 @@ public class LoggingTransferProgressListener implements TransferProgressListener
 		long fileSize = fileMetadataMap.get(filePath).getFileSizeBytes();
 		String chunkRank = chunkRank(filePath, chunkInfo);
 		if (statsListener == null) {
-			logChunk("[{}] | ({}) [{}] | Completed chunk in file: '{}'",
-				fileSizePretty(fileSize), chunkRank, fileSizePretty(chunkInfo.getSizeBytes()), filePath
+			logChunk(format("[%s] | (%s) [%s] | Completed chunk in file: ",
+				fileSizePretty(fileSize), chunkRank, fileSizePretty(chunkInfo.getSizeBytes())),
+				quote(filePath)
 			);
 			return;
 		}
-		logChunk("Total: {}% | ({}) [{}] | ({}) [{}] | Completed chunk in file: '{}'",
+		logChunk(format("Total: %s%% | (%s) [%s] | (%s) [%s] | Completed chunk in file: ",
 			totalProgressPercent(), fileRank(filePath), fileSizePretty(fileSize),
-			chunkRank, fileSizePretty(chunkInfo.getSizeBytes()),
-			filePath
+			chunkRank, fileSizePretty(chunkInfo.getSizeBytes())),
+			quote(filePath)
 		);
 	}
 
@@ -359,7 +346,7 @@ public class LoggingTransferProgressListener implements TransferProgressListener
 		}
 		if (statsListener == null) {
 			logTransfer("--------------------------------------------");
-			logTransfer("Transfer task is _completed_");
+			logTransfer("Transfer task is ", highlight("completed"));
 			logTransfer("--------------------------------------------");
 			return;
 		}
@@ -383,25 +370,25 @@ public class LoggingTransferProgressListener implements TransferProgressListener
 		double skippedChunksPercent = divRound1d(100 * statsListener.getSkippedChunks(), numTransferredFilesChunks);
 		double transferredChunksPercent = divRound1d(100 * statsListener.getTransferredChunks(), numTransferredFilesChunks);
 		logTransfer("--------------------------------------------");
-		logTransfer("Transfer task is _completed_, stats:");
-		logTransfer("  - Total duration: {}", totalDuration);
-		logTransfer("  - Total size: {}", totalSizePretty);
-		logTransfer("     - Skipped: {} ({}%)", skippedSize, skippedSizePercent);
-		logTransfer("     - Transferred: {} ({}%)", transferredSize, transferredSizePercent);
-		logTransfer("  - Num directories: {}", numDirectories);
-		logTransfer("     - Deleted: {}", statsListener.getDeletedDirectories());
-		logTransfer("  - Num files: {}", numFiles);
-		logTransfer("     - Skipped: {} ({}%)", numSkippedFiles, numSkippedPercent);
-		logTransfer("         - Num chunks: {}", numSkippedFilesChunks);
-		logTransfer("     - Transferred: {} ({}%)", numTransferredFiles, numTransferredPercent);
-		logTransfer("         - Num chunks: {}", numTransferredFilesChunks);
-		logTransfer("             - Skipped: {} ({}%)", statsListener.getSkippedChunks(), skippedChunksPercent);
-		logTransfer("             - Transferred: {} ({}%)", statsListener.getTransferredChunks(), transferredChunksPercent);
-		logTransfer("     - Deleted: {}", statsListener.getDeletedFiles());
-		logTransfer("     - Concurrent deletions: {}", statsListener.getConcurrentDeletions());
+		logTransfer("Transfer task is ", highlight("completed"), ", stats:");
+		logTransfer("  - Total duration: ", totalDuration);
+		logTransfer("  - Total size: ", totalSizePretty);
+		logTransfer("     - Skipped: ", skippedSize, ", ", skippedSizePercent + "%");
+		logTransfer("     - Transferred: ", transferredSize, ", ", transferredSizePercent + "%");
+		logTransfer("  - Num directories: ", numDirectories);
+		logTransfer("     - Deleted: ", statsListener.getDeletedDirectories());
+		logTransfer("  - Num files: ", numFiles);
+		logTransfer("     - Skipped: ", numSkippedFiles, ", ", numSkippedPercent + "%");
+		logTransfer("         - Num chunks: ", numSkippedFilesChunks);
+		logTransfer("     - Transferred: ", numTransferredFiles, ", ", numTransferredPercent + "%");
+		logTransfer("         - Num chunks: ", numTransferredFilesChunks);
+		logTransfer("             - Skipped: ", statsListener.getSkippedChunks(), ", ", skippedChunksPercent + "%");
+		logTransfer("             - Transferred: ", statsListener.getTransferredChunks(), ", ", transferredChunksPercent + "%");
+		logTransfer("     - Deleted: ", statsListener.getDeletedFiles());
+		logTransfer("     - Concurrent deletions: ", statsListener.getConcurrentDeletions());
 		logTransfer("  - Speed:");
-		logTransfer("     - Average: {}", fileSizePretty(avgSpeed) + "/s");
-		logTransfer("     - Effective: {}", fileSizePretty(effectiveAvgSpeed) + "/s");
+		logTransfer("     - Average: ", fileSizePretty(avgSpeed) + "/s");
+		logTransfer("     - Effective: ", fileSizePretty(effectiveAvgSpeed) + "/s");
 		logTransfer("--------------------------------------------");
 	}
 
@@ -412,10 +399,12 @@ public class LoggingTransferProgressListener implements TransferProgressListener
 		}
 		logTransfer("--------------------------------------------");
 		if (statsListener == null) {
-			logTransfer("Transfer task is _aborted_");
+			logTransfer("Transfer task is ", highlight("aborted"));
 		} else {
 			String totalDuration = durationPretty(Duration.ofMillis(statsListener.totalTime()));
-			logTransfer("Transfer task is _aborted_, transfer {}% duration: {}", totalProgressPercent(), totalDuration);
+			logTransfer("Transfer task is ", highlight("aborted"),
+				", transfer ", totalProgressPercent(), "% duration: ", totalDuration
+			);
 		}
 		logTransfer("--------------------------------------------");
 	}

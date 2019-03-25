@@ -17,6 +17,7 @@ public class TransferOptions {
 
 	private int numTransferConnections;
 	private int timeout;
+	private int connectTimeout;
 	private boolean deleteUnexpected;
 	private long chunkSizeBytes;
 	@NonNull

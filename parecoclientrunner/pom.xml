@@ -9,7 +9,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>pareco-client</artifactId>
+    <artifactId>pareco-client-runner</artifactId>
 
     <build>
         <plugins>
@@ -21,8 +21,8 @@
                         <goals><goal>repackage</goal></goals>
                         <configuration>
                             <classifier>spring-boot</classifier>
-                            <mainClass>com.mediatoolkit.pareco.ParecoClient</mainClass>
-                            <finalName>pareco-client-app-${project.version}</finalName>
+                            <mainClass>com.mediatoolkit.pareco.ParecoClientRunner</mainClass>
+                            <finalName>pareco-client-runner-app-${project.version}</finalName>
                         </configuration>
                     </execution>
                 </executions>
@@ -32,23 +32,22 @@
 
     <dependencies>
         <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.freemarker</groupId>
+            <artifactId>freemarker</artifactId>
+            <!--<version>2.3.28</version>-->
+        </dependency>
+        <dependency>
+            <groupId>com.mediatoolkit</groupId>
+            <artifactId>pareco-client</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.springframework</groupId>
-            <artifactId>spring-web</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>pareco-core</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>pareco-server</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
+            <artifactId>spring-context-support</artifactId>
         </dependency>
     </dependencies>
 

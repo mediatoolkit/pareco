@@ -12,7 +12,10 @@ import com.mediatoolkit.pareco.progress.LoggingTransferProgressListener.LoggingF
 import com.mediatoolkit.pareco.progress.Speedometer;
 import com.mediatoolkit.pareco.progress.StatsRecordingTransferProgressListener;
 import com.mediatoolkit.pareco.progress.TransferProgressListener;
+import com.mediatoolkit.pareco.progress.log.Slf4jLoggingAppender;
 import com.mediatoolkit.pareco.transfer.download.DownloadTransferExecutor;
+import com.mediatoolkit.pareco.transfer.exit.TransferAbortTrigger;
+import com.mediatoolkit.pareco.transfer.exit.JvmExitAbortTrigger;
 import com.mediatoolkit.pareco.transfer.model.ServerInfo;
 import com.mediatoolkit.pareco.transfer.model.TransferOptions;
 import com.mediatoolkit.pareco.transfer.model.TransferOptions.FileIntegrityOptions;
@@ -76,6 +79,7 @@ public abstract class BaseIntegration {
 
 	private ServerInfo serverInfo;
 	private File baseTestWorkspace;
+	private TransferAbortTrigger abortTrigger;
 	TransferTask defaultTask;
 
 	@Autowired
@@ -89,6 +93,7 @@ public abstract class BaseIntegration {
 
 	@PostConstruct
 	public void init() {
+		abortTrigger = new JvmExitAbortTrigger();
 		serverInfo = new ServerInfo("http", "localhost", port);
 		defaultTask = TransferTask.builder()
 			.localRootDirectory(null)
@@ -144,10 +149,10 @@ public abstract class BaseIntegration {
 	) {
 		StatsRecordingTransferProgressListener statsProgressListener = new StatsRecordingTransferProgressListener();
 		LoggingTransferProgressListener loggingProgressListener = LoggingTransferProgressListener.builder()
-			.forceColors(true)
 			.statsListener(statsProgressListener)
 			.speedometer(new Speedometer())
 			.loggingFilter(LoggingFilter.CHUNKS)
+			.loggingAppender(new Slf4jLoggingAppender("Testing", true))
 			.build();
 		TransferListenerAction transferListenerAction = injectingActions != null
 			? new TransferListenerAction(transferContext, injectingActions)
@@ -198,7 +203,7 @@ public abstract class BaseIntegration {
 		TransferTask transferTask = testCase.getTransferTask()
 			.withLocalRootDirectory(localSrcDir)
 			.withRemoteRootDirectory(remoteDestDir);
-		uploader.executeUpload(transferTask, progressListener.toCompositeListener());
+		uploader.executeUpload(transferTask, abortTrigger, progressListener.toCompositeListener());
 
 		StatsRecordingTransferProgressListener stats = progressListener.getStatsProgressListener();
 		SoftAssertions soft = new SoftAssertions();
@@ -230,7 +235,7 @@ public abstract class BaseIntegration {
 		TransferTask transferTask = testCase.getTransferTask()
 			.withLocalRootDirectory(localDestDir)
 			.withRemoteRootDirectory(remoteSrcDir);
-		downloader.executeDownload(transferTask, progressListener.toCompositeListener());
+		downloader.executeDownload(transferTask, abortTrigger, progressListener.toCompositeListener());
 
 		StatsRecordingTransferProgressListener stats = progressListener.getStatsProgressListener();
 		SoftAssertions soft = new SoftAssertions();

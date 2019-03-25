@@ -19,10 +19,18 @@
             <destName>pareco-client-app.jar</destName>
         </file>
         <file>
+            <source>../parecoclientrunner/target/pareco-client-runner-app-${project.version}-spring-boot.jar</source>
+            <outputDirectory>parecoclientrunner/</outputDirectory>
+            <destName>pareco-client-runner-app.jar</destName>
+        </file>
+        <file>
             <source>pareco-server.sh</source>
         </file>
         <file>
             <source>pareco-cli.sh</source>
+        </file>
+        <file>
+            <source>pareco-cli-runner.sh</source>
         </file>
     </files>
 </assembly>

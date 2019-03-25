@@ -7,11 +7,12 @@
     <groupId>com.mediatoolkit</groupId>
     <artifactId>pareco</artifactId>
     <packaging>pom</packaging>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.1</version>
     <modules>
         <module>parecocore</module>
         <module>parecoserver</module>
         <module>parecoclient</module>
+        <module>parecoclientrunner</module>
         <module>parecodistribution</module>
     </modules>
 

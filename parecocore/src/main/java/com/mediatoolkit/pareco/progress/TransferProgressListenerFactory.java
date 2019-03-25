@@ -1,6 +1,8 @@
 package com.mediatoolkit.pareco.progress;
 
 import com.mediatoolkit.pareco.progress.LoggingTransferProgressListener.LoggingFilter;
+import com.mediatoolkit.pareco.progress.log.LoggingAppender;
+import com.mediatoolkit.pareco.progress.log.Slf4jLoggingAppender;
 import org.springframework.stereotype.Component;
 
 /**
@@ -11,7 +13,9 @@ import org.springframework.stereotype.Component;
 public class TransferProgressListenerFactory {
 
 	public TransferProgressListener createTransferProgressListener(
-		TransferLoggingLevel loggingLevel, boolean stats, boolean forceColors
+		TransferLoggingLevel loggingLevel,
+		boolean stats,
+		LoggingAppender loggingAppender
 	) {
 		StatsRecordingTransferProgressListener statsProgressListener = stats
 			? new StatsRecordingTransferProgressListener()
@@ -22,39 +26,39 @@ public class TransferProgressListenerFactory {
 				return TransferProgressListener.NO_OP_LISTENER;
 			case QUIET:
 				return LoggingTransferProgressListener.builder()
-					.forceColors(forceColors)
 					.loggingFilter(LoggingFilter.START_END)
+					.loggingAppender(loggingAppender)
 					.build();
 			case STATS_NO_SPEED:
 				return CompositeTransferProgressListener.of(
 					statsProgressListener, LoggingTransferProgressListener.builder()
-						.forceColors(forceColors)
 						.statsListener(statsProgressListener)
 						.loggingFilter(LoggingFilter.START_END)
+						.loggingAppender(loggingAppender)
 						.build()
 				);
 			case STATS:
 				return CompositeTransferProgressListener.of(
 					statsProgressListener, LoggingTransferProgressListener.builder()
-						.forceColors(forceColors)
 						.statsListener(statsProgressListener)
 						.speedometer(speedometer)
 						.loggingFilter(LoggingFilter.START_END_SPEED)
+						.loggingAppender(loggingAppender)
 						.build()
 				);
 			case FILES_NO_SPEED:
 				return CompositeTransferProgressListener.of(
 					statsProgressListener, LoggingTransferProgressListener.builder()
-						.forceColors(forceColors)
 						.loggingFilter(LoggingFilter.FILES)
+						.loggingAppender(loggingAppender)
 						.statsListener(statsProgressListener)
 						.build()
 				);
 			case FILES:
 				return CompositeTransferProgressListener.of(
 					statsProgressListener, LoggingTransferProgressListener.builder()
-						.forceColors(forceColors)
 						.loggingFilter(LoggingFilter.FILES_SPEED)
+						.loggingAppender(loggingAppender)
 						.speedometer(speedometer)
 						.statsListener(statsProgressListener)
 						.build()
@@ -62,8 +66,8 @@ public class TransferProgressListenerFactory {
 			case CHUNKS:
 				return CompositeTransferProgressListener.of(
 					statsProgressListener, LoggingTransferProgressListener.builder()
-						.forceColors(forceColors)
 						.loggingFilter(LoggingFilter.CHUNKS)
+						.loggingAppender(loggingAppender)
 						.speedometer(speedometer)
 						.statsListener(statsProgressListener)
 						.build()

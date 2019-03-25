@@ -42,7 +42,8 @@ public class UploadClient {
 		@NonNull String httpScheme,
 		@NonNull String host,
 		@NonNull Integer port,
-		@NonNull Integer timeout,
+		@NonNull Integer connectTimeout,
+		@NonNull Integer readTimeout,
 		String authToken,
 		@NonNull TransferNamesEncoding encoding
 	) {
@@ -52,8 +53,8 @@ public class UploadClient {
 		this.authToken = authToken;
 		restTemplate = new RestTemplateBuilder()
 			.errorHandler(new TransferRestErrorHandler())
-			.setConnectTimeout(timeout)
-			.setReadTimeout(timeout)
+			.setConnectTimeout(connectTimeout)
+			.setReadTimeout(readTimeout)
 			.build();
 		this.encoding = encoding;
 	}
