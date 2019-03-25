@@ -80,7 +80,7 @@
             <td><input type="text" name="digestType" value="CRC_32"></td>
         </tr>
         <tr>
-            <td>Skip digest check<br><strong>Note</strong>: will cause to full <br>re-transfer of existing files <br>if sizes do not match</td>
+            <td>Skip digest check<br><strong>Note</strong>: allows skip if file metadata is ok</td>
             <td><input type="checkbox" name="skipDigest"></td>
         </tr>
         <tr>

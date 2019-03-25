@@ -32,10 +32,11 @@ public class TransferOptions {
 
 		@NonNull
 		private IntegrityCheckType integrityCheckType;
+		@NonNull
 		private DigestType digestType;
 
-		public static FileIntegrityOptions onlyMetadata() {
-			return new FileIntegrityOptions(IntegrityCheckType.ONLY_FILE_METADATA, null);
+		public static FileIntegrityOptions onlyMetadata(DigestType digestType) {
+			return new FileIntegrityOptions(IntegrityCheckType.ONLY_FILE_METADATA, digestType);
 		}
 
 		public static FileIntegrityOptions metadataAndDigest(DigestType digestType) {

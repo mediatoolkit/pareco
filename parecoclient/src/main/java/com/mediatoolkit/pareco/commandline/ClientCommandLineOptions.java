@@ -78,7 +78,7 @@ public class ClientCommandLineOptions implements CommandLineOptions {
 
 	@Parameter(
 		names = "--skipDigest",
-		description = "If set, then calculating and checking file checksum will be ignored, file integrity will only be checked by file size and last modified time"
+		description = "If set, digest calculation and file transfer can be skipped when size and last modified time check is ok, if not, normal digest calculation and chunk transfer will follow"
 	)
 	private boolean skipDigestCheck = false;
 
@@ -125,7 +125,7 @@ public class ClientCommandLineOptions implements CommandLineOptions {
 
 	public TransferTask toTransferTask() {
 		FileIntegrityOptions fileIntegrityOptions = skipDigestCheck
-			? FileIntegrityOptions.onlyMetadata()
+			? FileIntegrityOptions.onlyMetadata(digestType)
 			: FileIntegrityOptions.metadataAndDigest(digestType);
 		return TransferTask.builder()
 			.localRootDirectory(localDir)
