@@ -67,7 +67,9 @@ function humanFileSize(bytes) {
 function handleOkDirStructure(data) {
     var contents = formatDirStructure(data);
     $("#dirContents").text(contents);
-    $("#checkInfo").text("Directories: " + data.directories.length + " Files: " + data.files.length + " Total size: " + humanFileSize(data.totalSizeBytes));
+    $("#checkInfo")
+        .text("Directories: " + data.directories.length + " Files: " + data.files.length + " Total size: " + humanFileSize(data.totalSizeBytes))
+        .removeClass("error");
 }
 
 function handleFailedRequest(error) {
@@ -77,7 +79,8 @@ function handleFailedRequest(error) {
     } else {
         msg = error.responseJSON.message;
     }
-    $("#checkInfo").text("Failed, error: " + msg);
+    $("#checkInfo").text("Failed, error: " + msg).addClass("error");
+    $("#dirContents").text("");
 }
 
 function formatDirStructure(dirStructure) {

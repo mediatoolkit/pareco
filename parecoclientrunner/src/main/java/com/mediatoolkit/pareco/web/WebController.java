@@ -10,6 +10,7 @@ import com.mediatoolkit.pareco.service.TransferRunner.Transfer;
 import com.mediatoolkit.pareco.transfer.model.TransferJob;
 import com.mediatoolkit.pareco.transfer.model.TransferMode;
 import lombok.extern.slf4j.Slf4j;
+import one.util.streamex.EntryStream;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -44,7 +45,11 @@ public class WebController {
 
 	@RequestMapping("/transfers/createNew")
 	public ModelAndView createNewTransfer() {
-		return new ModelAndView("createNewTransfer");
+		return new ModelAndView("createNewTransfer",
+			EntryStream.of(
+				"digestTypes", DigestType.values()
+			).toMap()
+		);
 	}
 
 	@RequestMapping("/transfers/{transferId}/createNew")
@@ -52,7 +57,12 @@ public class WebController {
 		@PathVariable("transferId") String transferId
 	) {
 		Transfer transfer = transferRunner.getTransfer(transferId);
-		return new ModelAndView("createNewTransfer", "job", transfer.getTransferJob());
+		return new ModelAndView("createNewTransfer",
+			EntryStream.of(
+				"job", transfer.getTransferJob(),
+				"digestTypes", DigestType.values()
+			).toMap()
+		);
 	}
 
 	@RequestMapping("/transfers/{transferId}")
