@@ -11,6 +11,7 @@ import com.mediatoolkit.pareco.transfer.model.TransferMode;
 import com.mediatoolkit.pareco.transfer.model.TransferOptions;
 import com.mediatoolkit.pareco.transfer.model.TransferOptions.FileIntegrityOptions;
 import com.mediatoolkit.pareco.transfer.model.TransferTask;
+import com.mediatoolkit.pareco.util.commandline.CommandLineOptions;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -27,7 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 @Parameters(separators = " =")
 @Slf4j
 @Builder(toBuilder = true)
-public class ClientCommandLineOptions {
+public class ClientCommandLineOptions implements CommandLineOptions {
 
 	@Parameter(names = {"-m", "--mode"}, required = true, description = "Transfer mode to execute", order = 1)
 	private TransferMode mode;

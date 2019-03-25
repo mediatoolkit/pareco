@@ -1,8 +1,8 @@
 package com.mediatoolkit.pareco;
 
-import com.beust.jcommander.JCommander;
-import com.beust.jcommander.ParameterException;
 import com.mediatoolkit.pareco.commandline.RunnerCommandLineOptions;
+import com.mediatoolkit.pareco.util.commandline.CommandLineUtil;
+import java.util.Optional;
 import java.util.Properties;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -17,23 +17,13 @@ import org.springframework.boot.builder.SpringApplicationBuilder;
 public class ParecoClientRunner {
 
 	public static void main(String[] args) {
-		RunnerCommandLineOptions options;
-		try {
-			options = new RunnerCommandLineOptions();
-			JCommander jCommander = JCommander.newBuilder()
-				.addObject(options)
-				.programName("./pareco-server.sh")
-				.build();
-			jCommander.parse(args);
-			if (options.isHelp()) {
-				jCommander.usage();
-				return;
-			}
-			options.validate();
-		} catch (ParameterException ex) {
-			log.error("Command line parameter exception: {}", ex.getMessage());
+		Optional<RunnerCommandLineOptions> optOptions = CommandLineUtil.readOptions(
+			RunnerCommandLineOptions.class, args
+		);
+		if (!optOptions.isPresent()) {
 			return;
 		}
+		RunnerCommandLineOptions options = optOptions.get();
 		Properties properties = new Properties();
 		properties.setProperty("server.port", String.valueOf(options.getPort()));
 		new SpringApplicationBuilder(ParecoClientRunner.class)

@@ -19,10 +19,10 @@ import com.mediatoolkit.pareco.progress.TransferProgressListener;
 import com.mediatoolkit.pareco.restclient.UploadClient;
 import com.mediatoolkit.pareco.restclient.UploadClient.FileUploadSessionClient;
 import com.mediatoolkit.pareco.restclient.UploadClient.UploadSessionClient;
-import com.mediatoolkit.pareco.transfer.exit.TransferAbortTrigger;
 import com.mediatoolkit.pareco.transfer.FileSizeClassifier;
 import com.mediatoolkit.pareco.transfer.FileTransferFilter;
 import com.mediatoolkit.pareco.transfer.UnexpectedFilesDeleter;
+import com.mediatoolkit.pareco.transfer.exit.TransferAbortTrigger;
 import com.mediatoolkit.pareco.transfer.model.FileFilterResult;
 import com.mediatoolkit.pareco.transfer.model.ServerInfo;
 import com.mediatoolkit.pareco.transfer.model.SizeClassifiedFiles;
@@ -96,19 +96,21 @@ public class UploadTransferExecutor {
 			transferTask.getInclude(), transferTask.getExclude(),
 			localDirectoryStructure
 		);
-		abortTrigger.registerAbort(uploadSessionClient::abortUpload);
-		progressListener.analyzingFiles(transferTask.getLocalRootDirectory(), transferTask.getRemoteRootDirectory());
-		DirectoryStructure remoteDirectoryStructure = uploadSessionClient.getDirectoryStructure();
-		Map<FilePath, FileMetadata> remoteFilesMetadata = remoteDirectoryStructure.filesMetadataAsMap();
-		int numTransferConnections = transferTask.getOptions().getNumTransferConnections();
-		ExecutorService fileUploadService = Executors.newFixedThreadPool(numTransferConnections, fileThreadFactory);
-		ExecutorService chunkUploadService = Executors.newFixedThreadPool(numTransferConnections, chunkThreadFactory);
-		try (UploadSessionExecutor uploadSessionExecutor = new UploadSessionExecutor(
-			fileUploadService, chunkUploadService, transferTask,
-			localDirectoryStructure, remoteDirectoryStructure,
-			remoteFilesMetadata, uploadSessionClient, progressListener
-		)) {
-			uploadSessionExecutor.doUploadSession();
+		try {
+			abortTrigger.registerAbort(uploadSessionClient::abortUpload);
+			progressListener.analyzingFiles(transferTask.getLocalRootDirectory(), transferTask.getRemoteRootDirectory());
+			DirectoryStructure remoteDirectoryStructure = uploadSessionClient.getDirectoryStructure();
+			Map<FilePath, FileMetadata> remoteFilesMetadata = remoteDirectoryStructure.filesMetadataAsMap();
+			int numTransferConnections = transferTask.getOptions().getNumTransferConnections();
+			ExecutorService fileUploadService = Executors.newFixedThreadPool(numTransferConnections, fileThreadFactory);
+			ExecutorService chunkUploadService = Executors.newFixedThreadPool(numTransferConnections, chunkThreadFactory);
+			try (UploadSessionExecutor uploadSessionExecutor = new UploadSessionExecutor(
+				fileUploadService, chunkUploadService, transferTask,
+				localDirectoryStructure, remoteDirectoryStructure,
+				remoteFilesMetadata, uploadSessionClient, progressListener
+			)) {
+				uploadSessionExecutor.doUploadSession();
+			}
 		} catch (Exception ex) {
 			progressListener.aborted();
 			runIgnoreException(uploadSessionClient::abortUpload);

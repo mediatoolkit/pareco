@@ -1,8 +1,8 @@
 package com.mediatoolkit.pareco;
 
-import com.beust.jcommander.JCommander;
-import com.beust.jcommander.ParameterException;
 import com.mediatoolkit.pareco.commandline.ServerCommandLineOptions;
+import com.mediatoolkit.pareco.util.commandline.CommandLineUtil;
+import java.util.Optional;
 import java.util.Properties;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.Banner.Mode;
@@ -18,23 +18,13 @@ import org.springframework.boot.builder.SpringApplicationBuilder;
 public class ParecoServer {
 
 	public static void main(String[] args) {
-		ServerCommandLineOptions options;
-		try {
-			options = new ServerCommandLineOptions();
-			JCommander jCommander = JCommander.newBuilder()
-				.addObject(options)
-				.programName("./pareco-server.sh")
-				.build();
-			jCommander.parse(args);
-			if (options.isHelp()) {
-				jCommander.usage();
-				return;
-			}
-			options.validate();
-		} catch (ParameterException ex) {
-			log.error("Command line parameter exception: {}", ex.getMessage());
+		Optional<ServerCommandLineOptions> optOptions = CommandLineUtil.readOptions(
+			ServerCommandLineOptions.class, args
+		);
+		if (!optOptions.isPresent()) {
 			return;
 		}
+		ServerCommandLineOptions options = optOptions.get();
 		Properties properties = new Properties();
 		properties.setProperty("server.port", String.valueOf(options.getPort()));
 		properties.setProperty("auth.token.generate", String.valueOf(options.isGenerateToken()));

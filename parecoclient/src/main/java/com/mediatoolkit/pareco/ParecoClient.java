@@ -1,7 +1,5 @@
 package com.mediatoolkit.pareco;
 
-import com.beust.jcommander.JCommander;
-import com.beust.jcommander.ParameterException;
 import com.mediatoolkit.pareco.commandline.ClientCommandLineOptions;
 import com.mediatoolkit.pareco.exceptions.ParecoException;
 import com.mediatoolkit.pareco.progress.log.LoggingAppender;
@@ -10,6 +8,8 @@ import com.mediatoolkit.pareco.transfer.TransferService;
 import com.mediatoolkit.pareco.transfer.exit.JvmExitAbortTrigger;
 import com.mediatoolkit.pareco.transfer.exit.TransferAbortTrigger;
 import com.mediatoolkit.pareco.transfer.model.TransferJob;
+import com.mediatoolkit.pareco.util.commandline.CommandLineUtil;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.Banner.Mode;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -25,27 +25,13 @@ import org.springframework.context.ConfigurableApplicationContext;
 public class ParecoClient {
 
 	public static void main(String[] args) {
-		ClientCommandLineOptions options;
-		try {
-			options = new ClientCommandLineOptions();
-			JCommander jCommander = JCommander.newBuilder()
-				.addObject(options)
-				.programName("./pareco-cli.sh")
-				.build();
-			jCommander.parse(args);
-			if (options.isHelp()) {
-				jCommander.usage();
-				return;
-			}
-			if (options.isVersion()) {
-				System.out.println("Version: " + Version.getVersion());
-				return;
-			}
-			options.validate();
-		} catch (ParameterException ex) {
-			log.error(ex.toString());
+		Optional<ClientCommandLineOptions> optOptions = CommandLineUtil.readOptions(
+			ClientCommandLineOptions.class, args
+		);
+		if (!optOptions.isPresent()) {
 			return;
 		}
+		ClientCommandLineOptions options = optOptions.get();
 		TransferJob transferJob = options.toTransferJob();
 		if (options.isForceColors()) {
 			System.setProperty("spring.output.ansi.enabled", "ALWAYS");

@@ -22,10 +22,10 @@ import com.mediatoolkit.pareco.restclient.DownloadClient;
 import com.mediatoolkit.pareco.restclient.DownloadClient.DownloadSessionClient;
 import com.mediatoolkit.pareco.restclient.DownloadClient.FileDownloadSessionClient;
 import com.mediatoolkit.pareco.restclient.TransferClientException.ServerSideTransferClientException.FileDeletedOnServerSideException;
-import com.mediatoolkit.pareco.transfer.exit.TransferAbortTrigger;
 import com.mediatoolkit.pareco.transfer.FileSizeClassifier;
 import com.mediatoolkit.pareco.transfer.FileTransferFilter;
 import com.mediatoolkit.pareco.transfer.UnexpectedFilesDeleter;
+import com.mediatoolkit.pareco.transfer.exit.TransferAbortTrigger;
 import com.mediatoolkit.pareco.transfer.model.FileFilterResult;
 import com.mediatoolkit.pareco.transfer.model.ServerInfo;
 import com.mediatoolkit.pareco.transfer.model.SizeClassifiedFiles;
@@ -99,22 +99,24 @@ public class DownloadTransferExecutor {
 			transferTask.getRemoteRootDirectory(), transferTask.getOptions().getChunkSizeBytes(),
 			transferTask.getInclude(), transferTask.getExclude()
 		);
-		abortTrigger.registerAbort(downloadSessionClient::abortDownload);
-		progressListener.analyzingFiles(transferTask.getRemoteRootDirectory(), transferTask.getLocalRootDirectory());
-		DirectoryStructure remoteDirectoryStructure = downloadSessionClient.getDirectoryStructure();
-		DirectoryStructure localDirectoryStructure = directoryStructureReader.readDirectoryStructure(
-			transferTask.getLocalRootDirectory(), transferTask.getInclude(), transferTask.getExclude()
-		);
-		Map<FilePath, FileMetadata> localFilesMetadata = localDirectoryStructure.filesMetadataAsMap();
-		int numTransferConnections = transferTask.getOptions().getNumTransferConnections();
-		ExecutorService fileDownloadService = Executors.newFixedThreadPool(numTransferConnections, fileThreadFactory);
-		ExecutorService chunkDownloadService = Executors.newFixedThreadPool(numTransferConnections, chunkThreadFactory);
-		try (DownloadSessionExecutor downloadSessionExecutor = new DownloadSessionExecutor(
-			fileDownloadService, chunkDownloadService, transferTask,
-			remoteDirectoryStructure, localDirectoryStructure,
-			localFilesMetadata, downloadSessionClient, progressListener
-		)) {
-			downloadSessionExecutor.doDownloadSession();
+		try {
+			abortTrigger.registerAbort(downloadSessionClient::abortDownload);
+			progressListener.analyzingFiles(transferTask.getRemoteRootDirectory(), transferTask.getLocalRootDirectory());
+			DirectoryStructure remoteDirectoryStructure = downloadSessionClient.getDirectoryStructure();
+			DirectoryStructure localDirectoryStructure = directoryStructureReader.readDirectoryStructure(
+				transferTask.getLocalRootDirectory(), transferTask.getInclude(), transferTask.getExclude()
+			);
+			Map<FilePath, FileMetadata> localFilesMetadata = localDirectoryStructure.filesMetadataAsMap();
+			int numTransferConnections = transferTask.getOptions().getNumTransferConnections();
+			ExecutorService fileDownloadService = Executors.newFixedThreadPool(numTransferConnections, fileThreadFactory);
+			ExecutorService chunkDownloadService = Executors.newFixedThreadPool(numTransferConnections, chunkThreadFactory);
+			try (DownloadSessionExecutor downloadSessionExecutor = new DownloadSessionExecutor(
+				fileDownloadService, chunkDownloadService, transferTask,
+				remoteDirectoryStructure, localDirectoryStructure,
+				localFilesMetadata, downloadSessionClient, progressListener
+			)) {
+				downloadSessionExecutor.doDownloadSession();
+			}
 		} catch (Exception ex) {
 			progressListener.aborted();
 			runIgnoreException(downloadSessionClient::abortDownload);
