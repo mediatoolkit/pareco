@@ -48,4 +48,12 @@ public class DirectoryStructure {
 			.toMap();
 	}
 
+	public long getTotalSizeBytes() {
+		int dirsSize = directories.size() * 4096;
+		long filesSize = StreamEx.of(files)
+			.mapToLong(FileMetadata::getFileSizeBytes)
+			.sum();
+		return dirsSize + filesSize;
+	}
+
 }

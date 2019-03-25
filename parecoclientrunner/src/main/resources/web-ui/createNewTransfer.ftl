@@ -97,5 +97,5 @@
 <button onclick="checkRemoteDir();">Check remote directory</button>
 
 <p id="checkType"></p>
-<pre id="dirContents"></pre>
 <p id="checkInfo"></p>
+<pre id="dirContents"></pre>
