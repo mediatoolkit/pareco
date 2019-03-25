@@ -1,5 +1,6 @@
 <#-- @ftlvariable name="job" type="com.mediatoolkit.pareco.transfer.model.TransferJob" -->
 <#-- @ftlvariable name="digestTypes" type="com.mediatoolkit.pareco.model.DigestType[]" -->
+<#-- @ftlvariable name="parameters" type="com.mediatoolkit.pareco.service.StartupParameters" -->
 
 <#function chunkSize(chunkSizeBytes)>
 <#-- @ftlvariable name="chunkSizeBytes" type="java.lang.Long" -->
@@ -20,26 +21,28 @@
         .hidden {
             display: none;
         }
-
         tr, td, table {
             border-top: 1px solid black;
             border-bottom: 1px solid black;
             border-collapse: collapse;
         }
-
         #dirContents {
             background-color: #d3d3d3;
             padding: 3px;
         }
-
         input[type=text] {
             width: 200px;
         }
         .error {
             color: #f64a38;
         }
+        input[readonly=readonly] {
+            background-color: #d1d1d1;
+        }
     </style>
 </head>
+<a href="/transfers">Back to all transfers</a>
+<hr>
 <h1>Create new transfer</h1>
 <form action="/transfers/submitCreateNew" method="post">
     <table>
@@ -57,24 +60,32 @@
         </tr>
         <tr>
             <td>Server url</td>
-            <td><input type="text" name="server" value="<#if job??>${job.transferTask.serverInfo.toString()}</#if>">
+            <td>
+                <#assign server = parameters.isServerSet()?then(
+                parameters.getServer().toUrl(),
+                (job??)?then(job.transferTask.serverInfo.toUrl(), "")
+                )>
+                <input type="text" name="server" value="${server}" <#if parameters.isServerSet()>readonly="readonly"</#if>>
             </td>
         </tr>
         <tr>
             <td>Remote dir</td>
-            <td><input type="text" name="remoteDir" value="<#if job??>${job.transferTask.remoteRootDirectory}</#if>">
+            <td>
+                <#assign remoteDir = parameters.isRemoteDirSet()?then(
+                parameters.getRemoteDir(), (job??)?then(job.transferTask.remoteRootDirectory, "")
+                )>
+                <input type="text" name="remoteDir" value="${remoteDir}" <#if parameters.isRemoteDirSet()>readonly="readonly"</#if>>
             </td>
         </tr>
         <tr>
             <td>Local dir</td>
-            <td><input type="text" name="localDir" value="<#if job??>${job.transferTask.localRootDirectory}</#if>"></td>
+            <td>
+                <#assign localDir = parameters.isLocalDirSet()?then(
+                parameters.getLocalDir(), (job??)?then(job.transferTask.localRootDirectory, "")
+                )>
+                <input type="text" name="localDir" value="${localDir}" <#if parameters.isLocalDirSet()>readonly="readonly"</#if>>
+            </td>
         </tr>
-    </table>
-    <label>
-        <input type="checkbox" name="advanced" onchange="handleAdvancedChange(this);">
-        Show advanced options
-    </label>
-    <table class="advanced hidden">
         <tr>
             <td>Include glob pattern</td>
             <td><input type="text" name="include" value="<#if job??>${job.transferTask.include!''}</#if>"></td>

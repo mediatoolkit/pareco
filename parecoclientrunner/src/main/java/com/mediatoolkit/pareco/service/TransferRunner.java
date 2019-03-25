@@ -31,15 +31,18 @@ public class TransferRunner implements AutoCloseable {
 
 	private final ThreadFactory threadFactory = new CustomizableThreadFactory("TransferExecutor");
 	private final TransferService transferService;
+	private final StartupParameters startupParameters;
 	private final ExecutorService executor;
 	private final Map<String, Transfer> transfers = Collections.synchronizedMap(new LinkedHashMap<>());
 	private final Object abortLock = new Object();
 
 	@Autowired
 	public TransferRunner(
-		TransferService transferService
+		TransferService transferService,
+		StartupParameters startupParameters
 	) {
 		this.transferService = transferService;
+		this.startupParameters = startupParameters;
 		this.executor = Executors.newSingleThreadExecutor(threadFactory);
 	}
 
@@ -49,6 +52,7 @@ public class TransferRunner implements AutoCloseable {
 	}
 
 	public String submitTransferJob(TransferJob transferJob) {
+		startupParameters.validate(transferJob);
 		String transferId = UUID.randomUUID().toString();
 		Transfer transfer = new Transfer();
 		transfer.transferJob = transferJob;

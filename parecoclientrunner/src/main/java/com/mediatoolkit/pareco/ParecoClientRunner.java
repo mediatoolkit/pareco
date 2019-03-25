@@ -7,6 +7,8 @@ import java.util.Properties;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 /**
  * @author Antonio Tomac, <antonio.tomac@mediatoolkit.com>
@@ -26,6 +28,17 @@ public class ParecoClientRunner {
 		RunnerCommandLineOptions options = optOptions.get();
 		Properties properties = new Properties();
 		properties.setProperty("server.port", String.valueOf(options.getPort()));
+		if (options.getServer() != null) {
+			properties.setProperty("fixed-parameter.server.scheme", options.getServer().getHttpScheme());
+			properties.setProperty("fixed-parameter.server.host", options.getServer().getHost());
+			properties.setProperty("fixed-parameter.server.port", Integer.toString(options.getServer().getPort()));
+		}
+		if (options.getLocalDir() != null) {
+			properties.setProperty("fixed-parameter.local-dir", options.getLocalDir());
+		}
+		if (options.getRemoteDir() != null) {
+			properties.setProperty("fixed-parameter.remote-dir", options.getRemoteDir());
+		}
 		new SpringApplicationBuilder(ParecoClientRunner.class)
 			.properties(properties)
 			.run(args);

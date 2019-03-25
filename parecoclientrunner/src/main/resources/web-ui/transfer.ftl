@@ -60,7 +60,7 @@
             </form>
         </td>
         <td>
-            <form action="/transfers/${transferInfo.id}/createNew" method="post">
+            <form action="/transfers/${transferInfo.id}/createNew" method="get">
                 <input type="submit" value="Create new from...">
             </form>
         </td>

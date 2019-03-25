@@ -5,6 +5,7 @@ import com.mediatoolkit.pareco.commandline.ClientCommandLineOptions;
 import com.mediatoolkit.pareco.commandline.ClientCommandLineOptions.ClientCommandLineOptionsBuilder;
 import com.mediatoolkit.pareco.commandline.ServerInfoConverter;
 import com.mediatoolkit.pareco.model.DigestType;
+import com.mediatoolkit.pareco.service.StartupParameters;
 import com.mediatoolkit.pareco.service.TransferRunner;
 import com.mediatoolkit.pareco.service.TransferRunner.Transfer;
 import com.mediatoolkit.pareco.transfer.model.TransferJob;
@@ -29,10 +30,15 @@ import org.springframework.web.servlet.view.RedirectView;
 public class WebController {
 
 	private final TransferRunner transferRunner;
+	private final StartupParameters startupParameters;
 
 	@Autowired
-	public WebController(TransferRunner transferRunner) {
+	public WebController(
+		TransferRunner transferRunner,
+		StartupParameters startupParameters
+	) {
 		this.transferRunner = transferRunner;
+		this.startupParameters = startupParameters;
 	}
 
 	@RequestMapping("/transfers")
@@ -47,7 +53,8 @@ public class WebController {
 	public ModelAndView createNewTransfer() {
 		return new ModelAndView("createNewTransfer",
 			EntryStream.of(
-				"digestTypes", DigestType.values()
+				"digestTypes", DigestType.values(),
+				"parameters", startupParameters
 			).toMap()
 		);
 	}
@@ -60,7 +67,8 @@ public class WebController {
 		return new ModelAndView("createNewTransfer",
 			EntryStream.of(
 				"job", transfer.getTransferJob(),
-				"digestTypes", DigestType.values()
+				"digestTypes", DigestType.values(),
+				"parameters", startupParameters
 			).toMap()
 		);
 	}
