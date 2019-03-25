@@ -19,7 +19,8 @@ public class ServerInfoConverter extends BaseConverter<ServerInfo> {
 
 	@Override
 	public ServerInfo convert(String value) {
-		UriComponents uriComponents = UriComponentsBuilder.fromUriString(value).build();
+		String serverStr = value.startsWith("http") ? value : "http://" + value;
+		UriComponents uriComponents = UriComponentsBuilder.fromUriString(serverStr).build();
 		String scheme = Util.thisOrDefault(uriComponents.getScheme(), "http");
 		String host = uriComponents.getHost();
 		if (host == null) {
