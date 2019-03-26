@@ -1,5 +1,6 @@
 <#-- @ftlvariable name="job" type="com.mediatoolkit.pareco.transfer.model.TransferJob" -->
 <#-- @ftlvariable name="digestTypes" type="com.mediatoolkit.pareco.model.DigestType[]" -->
+<#-- @ftlvariable name="logLevels" type="com.mediatoolkit.pareco.progress.TransferLoggingLevel[]" -->
 <#-- @ftlvariable name="parameters" type="com.mediatoolkit.pareco.service.StartupParameters" -->
 
 <#function chunkSize(chunkSizeBytes)>
@@ -31,7 +32,7 @@
             padding: 3px;
         }
         input[type=text] {
-            width: 200px;
+            width: 300px;
         }
         .error {
             color: #f64a38;
@@ -139,8 +140,26 @@
             </td>
         </tr>
         <tr>
+            <td>Logging level</td>
+            <td>
+                <#assign selectedLogLevel = (job??)?then(job.loggingLevel.name(), "FILES")>
+                <select name="logLevel">
+                    <#list logLevels as logLevel>
+                        <option <#if logLevel.name()==selectedLogLevel>selected</#if>>
+                            ${logLevel}
+                        </option>
+                    </#list>
+                </select>
+            </td>
+        </tr>
+        <tr>
             <td>Remote server auth token</td>
-            <td><input type="text" name="authToken" value="<#if job??>${job.transferTask.authToken!''}</#if>"></td>
+            <td>
+                <#assign authToken = parameters.isAuthTokenSet()?then(
+                parameters.getAuthToken(), (job??)?then(job.transferTask.getAuthToken(), "")
+                )>
+                <input type="text" name="authToken" value="${authToken}" <#if parameters.isAuthTokenSet()>readonly="readonly"</#if>>
+            </td>
         </tr>
     </table>
     <p>

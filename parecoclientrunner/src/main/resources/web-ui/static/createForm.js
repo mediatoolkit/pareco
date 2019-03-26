@@ -84,11 +84,28 @@ function handleFailedRequest(error) {
 }
 
 function formatDirStructure(dirStructure) {
-    var result = "";
+    var elements = [];
+    dirStructure.directories.forEach(function (dir) {
+        var relativeDir = dir.filePath.relativeDirectory;
+        elements.push({
+            info: "".padEnd(7, '-'),
+            name: relativeDir + (relativeDir === "" ? "" : "/") + dir.filePath.fileName + "/"
+        });
+    });
     dirStructure.files.forEach(function (file) {
         var relativeDir = file.filePath.relativeDirectory;
         var fileSize = humanFileSize(file.fileSizeBytes);
-        result += fileSize.padStart(7, ' ') + " | " + relativeDir + (relativeDir === "" ? "" : "/") + file.filePath.fileName + "\n";
+        elements.push({
+            info: fileSize.padStart(7, ' '),
+            name: relativeDir + (relativeDir === "" ? "" : "/") + file.filePath.fileName
+        });
     });
-    return result;
+    return elements
+        .sort(function(e1, e2) {
+            return e1.name.localeCompare(e2.name);
+        })
+        .map(function (element) {
+            return element.info + " | " + element.name;
+        })
+        .join("\n");
 }

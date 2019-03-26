@@ -30,6 +30,9 @@ public class RunnerCommandLineOptions implements CommandLineOptions {
 	)
 	private ServerInfo server;
 
+	@Parameter(names = {"-a", "--authToken"}, description = "Authentication token to use to authorize against server", order = 2)
+	private String authToken;
+
 	@Parameter(names = {"-l", "--localDir"}, description = "Local directory to upload from or to download into", order = 3)
 	private String localDir;
 

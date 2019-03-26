@@ -33,6 +33,9 @@ public class ParecoClientRunner {
 			properties.setProperty("fixed-parameter.server.host", options.getServer().getHost());
 			properties.setProperty("fixed-parameter.server.port", Integer.toString(options.getServer().getPort()));
 		}
+		if (options.getAuthToken() != null) {
+			properties.setProperty("fixed-parameter.auth-token", options.getAuthToken());
+		}
 		if (options.getLocalDir() != null) {
 			properties.setProperty("fixed-parameter.local-dir", options.getLocalDir());
 		}

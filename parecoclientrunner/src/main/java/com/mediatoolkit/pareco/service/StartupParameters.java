@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 public class StartupParameters {
 
 	private final ServerInfo server;
+	private final String authToken;
 	private final String localDir;
 	private final String remoteDir;
 
@@ -25,6 +26,7 @@ public class StartupParameters {
 		@Value("${fixed-parameter.server.scheme:#{null}}") String serverScheme,
 		@Value("${fixed-parameter.server.host:#{null}}") String serverHost,
 		@Value("${fixed-parameter.server.port:#{null}}") Integer serverPort,
+		@Value("${fixed-parameter.auth-token:#{null}}") String authToken,
 		@Value("${fixed-parameter.local-dir:#{null}}") String localDir,
 		@Value("${fixed-parameter.remote-dir:#{null}}") String remoteDir
 	) {
@@ -33,12 +35,17 @@ public class StartupParameters {
 		} else {
 			server = null;
 		}
+		this.authToken = authToken;
 		this.localDir = localDir;
 		this.remoteDir = remoteDir;
 	}
 
 	public boolean isServerSet() {
 		return server != null;
+	}
+
+	public boolean isAuthTokenSet() {
+		return authToken != null;
 	}
 
 	public boolean isLocalDirSet() {
@@ -61,6 +68,12 @@ public class StartupParameters {
 			throw new StartupParameterConflictException(String.format(
 				"Request's localDir (%s) is not equal to predefined localdir (%s)",
 				transferTask.getLocalRootDirectory(), localDir
+			));
+		}
+		if (authToken != null && !authToken.equals(transferTask.getAuthToken())) {
+			throw new StartupParameterConflictException(String.format(
+				"Request's authToken (%s) is not equal to predefined authToken (%s)",
+				transferTask.getAuthToken(), authToken
 			));
 		}
 		if (remoteDir != null && !remoteDir.equals(transferTask.getRemoteRootDirectory())) {

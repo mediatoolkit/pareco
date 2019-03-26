@@ -5,6 +5,7 @@ import com.mediatoolkit.pareco.commandline.ClientCommandLineOptions;
 import com.mediatoolkit.pareco.commandline.ClientCommandLineOptions.ClientCommandLineOptionsBuilder;
 import com.mediatoolkit.pareco.commandline.ServerInfoConverter;
 import com.mediatoolkit.pareco.model.DigestType;
+import com.mediatoolkit.pareco.progress.TransferLoggingLevel;
 import com.mediatoolkit.pareco.service.StartupParameters;
 import com.mediatoolkit.pareco.service.TransferRunner;
 import com.mediatoolkit.pareco.service.TransferRunner.Transfer;
@@ -54,6 +55,7 @@ public class WebController {
 		return new ModelAndView("createNewTransfer",
 			EntryStream.of(
 				"digestTypes", DigestType.values(),
+				"logLevels", TransferLoggingLevel.values(),
 				"parameters", startupParameters
 			).toMap()
 		);
@@ -68,6 +70,7 @@ public class WebController {
 			EntryStream.of(
 				"job", transfer.getTransferJob(),
 				"digestTypes", DigestType.values(),
+				"logLevels", TransferLoggingLevel.values(),
 				"parameters", startupParameters
 			).toMap()
 		);
@@ -98,7 +101,8 @@ public class WebController {
 		@RequestParam(name = "chunkSize", required = false) String chunkSize,
 		@RequestParam(name = "digestType", required = false) DigestType digestType,
 		@RequestParam(name = "skipDigest", required = false) String skipDigest,
-		@RequestParam(name = "authToken", required = false) String authToken
+		@RequestParam(name = "authToken", required = false) String authToken,
+		@RequestParam(name = "logLevel", required = false) TransferLoggingLevel logLevel
 	) {
 		ClientCommandLineOptionsBuilder builder = new ClientCommandLineOptions().toBuilder()
 			.mode(transferMode)
@@ -135,6 +139,9 @@ public class WebController {
 		}
 		if (authToken != null && !authToken.isEmpty()) {
 			builder.authToken(authToken);
+		}
+		if (logLevel != null) {
+			builder.loggingLevel(logLevel);
 		}
 		ClientCommandLineOptions commandLineOptions = builder.build();
 		commandLineOptions.validate();
