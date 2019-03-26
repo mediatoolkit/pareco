@@ -60,6 +60,7 @@ public class StatsRecordingTransferProgressListener implements TransferProgressL
 		return filesStats.get(filePath);
 	}
 
+	@Synchronized
 	public Integer getFileRank(FilePath filePath) {
 		return filesRanks.get(filePath);
 	}
