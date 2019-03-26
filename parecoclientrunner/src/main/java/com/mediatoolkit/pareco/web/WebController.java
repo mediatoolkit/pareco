@@ -4,6 +4,7 @@ import com.mediatoolkit.pareco.commandline.ChunkSizeConverter;
 import com.mediatoolkit.pareco.commandline.ClientCommandLineOptions;
 import com.mediatoolkit.pareco.commandline.ClientCommandLineOptions.ClientCommandLineOptionsBuilder;
 import com.mediatoolkit.pareco.commandline.ServerInfoConverter;
+import com.mediatoolkit.pareco.commandline.TimeoutConverter;
 import com.mediatoolkit.pareco.model.DigestType;
 import com.mediatoolkit.pareco.progress.TransferLoggingLevel;
 import com.mediatoolkit.pareco.service.StartupParameters;
@@ -95,8 +96,8 @@ public class WebController {
 		@RequestParam(name = "include", required = false) String include,
 		@RequestParam(name = "exclude", required = false) String exclude,
 		@RequestParam(name = "numConnections", required = false) Integer numTransferConnections,
-		@RequestParam(name = "timeout", required = false) Integer timeout,
-		@RequestParam(name = "connectTimeout", required = false) Integer connectTimeout,
+		@RequestParam(name = "timeout", required = false) String timeout,
+		@RequestParam(name = "connectTimeout", required = false) String connectTimeout,
 		@RequestParam(name = "deleteUnexpected", required = false) String deleteUnexpected,
 		@RequestParam(name = "chunkSize", required = false) String chunkSize,
 		@RequestParam(name = "digestType", required = false) DigestType digestType,
@@ -120,10 +121,10 @@ public class WebController {
 			builder.numTransferConnections(numTransferConnections);
 		}
 		if (timeout != null) {
-			builder.timeout(timeout);
+			builder.timeout(new TimeoutConverter("timeout").convert(timeout));
 		}
 		if (connectTimeout != null) {
-			builder.connectTimeout(connectTimeout);
+			builder.connectTimeout(new TimeoutConverter("connectTimeout").convert(connectTimeout));
 		}
 		if (deleteUnexpected != null) {
 			builder.deleteUnexpected(true);

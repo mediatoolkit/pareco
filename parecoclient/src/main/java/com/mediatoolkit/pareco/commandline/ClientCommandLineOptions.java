@@ -57,10 +57,20 @@ public class ClientCommandLineOptions implements CommandLineOptions {
 	@Parameter(names = {"-n", "--numConnections"}, description = "Number of parallel transport connections", order = 5)
 	private int numTransferConnections = 10;
 
-	@Parameter(names = {"-t", "--timeout"}, description = "Read timeout on connections in milliseconds", order = 5)
+	@Parameter(
+		names = {"-t", "--timeout"},
+		description = "Read timeout on connections, examples: 100ms, 3sec, 4min, 2h",
+		converter = TimeoutConverter.class,
+		order = 6
+	)
 	private int timeout = 120_000;
 
-	@Parameter(names = {"-ct", "--connectTimeout"}, description = "Connect and timeout on connections in milliseconds", order = 6)
+	@Parameter(
+		names = {"-ct", "--connectTimeout"},
+		description = "Connect and timeout on connections, examples: 100ms, 3sec, 4min, 2h",
+		converter = TimeoutConverter.class,
+		order = 6
+	)
 	private int connectTimeout = 5_000;
 
 	@Parameter(

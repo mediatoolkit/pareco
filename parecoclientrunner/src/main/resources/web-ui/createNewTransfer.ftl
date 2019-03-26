@@ -15,6 +15,24 @@
     <#assign chunkSizeMB = chunkSizeKB / 1024>
     <#return chunkSizeMB?c+"M">
 </#function>
+
+<#function timeout(timeoutMs)>
+<#-- @ftlvariable name="timeout" type="java.lang.Long" -->
+    <#if timeoutMs lt 1000 || timeoutMs % 1000 != 0>
+        <#return timeoutMs?c+"ms">
+    </#if>
+    <#assign timeoutSec = timeoutMs / 1000>
+    <#if timeoutSec lt 60 || timeoutSec % 60 != 0>
+        <#return timeoutSec?c+"sec">
+    </#if>
+    <#assign timeoutMin = timeoutSec / 60>
+    <#if timeoutMin lt 60 || timeoutMin % 60 != 0>
+        <#return timeoutMin?c+"min">
+    </#if>
+    <#assign timeoutH = timeoutMin / 60>
+    <#return timeoutH?c+"h">
+</#function>
+
 <head>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
     <script src="/static/createForm.js"></script>
@@ -101,14 +119,14 @@
                        value="${(job??)?then(job.transferTask.options.numTransferConnections, 10)?c}"></td>
         </tr>
         <tr>
-            <td>TCP read timeout (millis)</td>
-            <td><input type="text" name="timeout" value="${(job??)?then(job.transferTask.options.timeout, 120000)?c}">
+            <td>TCP read timeout</td>
+            <td><input type="text" name="timeout" value="${timeout((job??)?then(job.transferTask.options.timeout, 12000000))}">
             </td>
         </tr>
         <tr>
-            <td>TCP connect timeout (millis)</td>
+            <td>TCP connect timeout</td>
             <td><input type="text" name="connectTimeout"
-                       value="${(job??)?then(job.transferTask.options.connectTimeout, 5000)?c}"></td>
+                       value="${timeout((job??)?then(job.transferTask.options.connectTimeout, 5000))}"></td>
         </tr>
         <tr>
             <td>Delete unexpected files</td>
