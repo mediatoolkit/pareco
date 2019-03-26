@@ -12,6 +12,7 @@ import com.mediatoolkit.pareco.transfer.model.TransferTask;
 import com.mediatoolkit.pareco.transfer.upload.UploadTransferExecutor;
 import java.io.IOException;
 import java.util.concurrent.CompletionException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
@@ -21,6 +22,7 @@ import org.springframework.web.client.RestClientException;
  * @since 2019-03-23
  */
 @Service
+@Slf4j
 public class TransferService {
 
 	private final TransferProgressListenerFactory progressListenerFactory;
@@ -63,6 +65,11 @@ public class TransferService {
 					break;
 			}
 		} catch (IOException | RestClientException | CompletionException ex) {
+			if (ex instanceof CompletionException) {
+				if (ex.getCause() instanceof NullPointerException) {
+					log.warn("NPE: ", ex);
+				}
+			}
 			throw new ParecoRuntimeException(ex);
 		}
 	}
