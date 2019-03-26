@@ -75,7 +75,7 @@ public class RestApi {
 		@PathVariable String transferId,
 		@RequestParam("from") int from
 	) {
-		return transferRunner.getTransfer(transferId).getLogEvents().getFrom(from, 20);
+		return transferRunner.getTransfer(transferId).getLogEvents().getFrom(from, 100);
 	}
 
 	@RequestMapping("/transfers/{transferId}/abort")

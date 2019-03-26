@@ -1,10 +1,14 @@
 var fromIndex = 0;
 var transferId = null;
 var state = null;
+var log = null;
+var followLog = null;
 
 $(document).ready(function () {
     transferId = $('meta[name=transferId]').attr("data-transferId");
     state = $('meta[name=state]').attr("data-state");
+    log = $("#log");
+    followLog = $("input[name=followLog]");
     console.log("Transfer id: " + transferId);
     refreshStatus();
     refreshLog();
@@ -32,15 +36,23 @@ function refreshLog() {
             fromIndex = data.toIndex;
             refreshLog();
         } else {
-            if (state !== 'COMPLETED' && state !== 'FAILED' && state !== 'ABORTED') {
+            if (!isTransferDone()) {
                 setTimeout(refreshLog, 500);
             }
         }
     });
 }
 
+function isTransferDone() {
+    return state === 'COMPLETED' || state === 'FAILED' || state === 'ABORTED';
+}
+
 function pad(num) {
     return (num < 10 ? '0' : '') + num;
+}
+
+function pad2(num) {
+    return (num < 10 ? '00' : (num < 100 ? '0' : '')) + num;
 }
 
 function formatDate(timestampMillis) {
@@ -51,12 +63,12 @@ function formatDate(timestampMillis) {
     var hours = date.getHours();
     var minutes = date.getMinutes();
     var seconds = date.getSeconds();
+    var millis = date.getMilliseconds()
     return pad(year % 100) + "-" + pad(month) + "-" + pad(day) + " "
-        + pad(hours) + ":" + pad(minutes) + ":" + pad(seconds);
+        + pad(hours) + ":" + pad(minutes) + ":" + pad(seconds) + "." + pad2(millis % 1000);
 }
 
 function appendLogEvents(logEvents) {
-    var log = $("#log");
     logEvents.forEach(function (logEvent) {
         log.append("<span class='DATE'>" + formatDate(logEvent.date) + "</span> ");
         log.append("<span class='NONE'>[</span><span class='THREAD'>" + logEvent.thread + "</span><span class='NONE'>]</span> ");
@@ -65,7 +77,11 @@ function appendLogEvents(logEvents) {
         });
         log.append("\n");
     });
-    if ($("input[name=followLog]").is(':checked')) {
-        log.scrollTop(log[0].scrollHeight);
+    if (followLog.is(':checked')) {
+        scrollLogToBottom();
     }
+}
+
+function scrollLogToBottom() {
+    log.scrollTop(log[0].scrollHeight);
 }
