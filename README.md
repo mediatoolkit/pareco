@@ -108,6 +108,11 @@ Properties:
 Properties:
  - fully controls both upload and download transfer
  - used for single transfer session
+ 
+## Client runner
+
+Client runner is wrapper around command line client with simple web UI. 
+It can be used instead raw client.
 
 ## Options
 
