@@ -7,8 +7,6 @@ import java.util.Properties;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
-import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 /**
  * @author Antonio Tomac, <antonio.tomac@mediatoolkit.com>
@@ -28,6 +26,7 @@ public class ParecoClientRunner {
 		RunnerCommandLineOptions options = optOptions.get();
 		Properties properties = new Properties();
 		properties.setProperty("server.port", String.valueOf(options.getPort()));
+		properties.setProperty("spring.freemarker.checkTemplateLocation", "false");
 		if (options.getServer() != null) {
 			properties.setProperty("fixed-parameter.server.scheme", options.getServer().getHttpScheme());
 			properties.setProperty("fixed-parameter.server.host", options.getServer().getHost());
