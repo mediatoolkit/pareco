@@ -48,9 +48,13 @@ _(i.e. running both server and the client on the same host machine and copying
 the data between the local file system and remote disk which is mounted 
 locally using NFS)_
 
+## Docker
+
+Pareco can run inside Docker container, see [section below](#docker-support)
+
 ## Build
 
-Pareco uses maven, use
+Pareco is maven project, use
 
     mvn clean compile package
 
@@ -63,12 +67,6 @@ After the build completes, both client and server will be packaged in
 and, more conveniently, in uncompressed directory
 
     parecodistribution/target/pareco-distribution-{version}/
-
-## Docker
-
-see build/run documentation [here](README-DOCKER.md)
-
-or, use docker image releases from [docker hub](https://hub.docker.com/r/mediatoolkit/pareco)
 
 ## Basic usage example
 
@@ -251,6 +249,56 @@ which are deleted since first download transfer.
 ## Requirements
  
 Pareco requires java 8 runtime, or Docker engine
+
+## Docker Support
+
+Docker images are available on [docker hub](https://hub.docker.com/r/mediatoolkit/pareco)
+
+Or you can build it yourself:
+
+### Docker/Build
+
+Simple docker image build without requiring for java on host machine.
+
+    docker build -t pareco .
+    
+If this build is too slow for you (due to downloading dependencies), 
+it is possible to do building on host machine and then package built artifacts into docker image.
+
+    mvn clean install
+    cd pareco-distribution && ./prepareBuild.sh && cd -
+    docker build -f Dockerfile.dev -t pareco .
+
+### Docker/Usage
+
+Usage is basically the same as [without](README.md#basic-usage-example) docker, 
+additional concerns are port mappings and volume mounts.
+
+#### Docker: Starting server
+
+    docker run \
+        -v /my/server/host/path:/mount/server \
+        -p 12345:8080 \
+        pareco:latest \
+        /pareco-server.sh -p 8080
+
+#### Docker: Starting client
+
+    docker run \
+        -v /my/cli/host/path:/mount/client \
+        pareco:latest \
+        /pareco-cli.sh -m upload \
+        -s http://my.server.example:12345 \
+        -l /mount/client -r /mount/server \
+        --forceColors
+
+#### Docker: Starting basic client web UI service
+
+    docker run \
+        -v /my/cli/host/path:/mount/client \
+        -p 54321:8888
+        pareco:latest \
+        /pareco-cli-runner.sh -p 8888
 
 ## Licence
 
