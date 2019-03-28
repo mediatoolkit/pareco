@@ -9,11 +9,11 @@
     <packaging>pom</packaging>
     <version>1.1</version>
     <modules>
-        <module>parecocore</module>
-        <module>parecoserver</module>
-        <module>parecoclient</module>
-        <module>parecoclientrunner</module>
-        <module>parecodistribution</module>
+        <module>pareco-core</module>
+        <module>pareco-server</module>
+        <module>pareco-client</module>
+        <module>pareco-client-runner</module>
+        <module>pareco-distribution</module>
     </modules>
 
     <properties>

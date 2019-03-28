@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "Preparing build artifacts..."
-VERSION=`cat ../parecocore/target/classes/version.txt`
+VERSION=`cat ../pareco-core/target/classes/version.txt`
 
 ARTIFACTS_SRC_DIR="target/pareco-distribution-$VERSION-bin"
 ARTIFACTS_DST_DIR="target/pareco-distribution-bin"

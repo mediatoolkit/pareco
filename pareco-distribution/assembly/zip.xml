@@ -9,18 +9,18 @@
     </formats>
     <files>
         <file>
-            <source>../parecoserver/target/pareco-server-app-${project.version}-spring-boot.jar</source>
-            <outputDirectory>parecoserver/</outputDirectory>
+            <source>../pareco-server/target/pareco-server-app-${project.version}-spring-boot.jar</source>
+            <outputDirectory>pareco-server/</outputDirectory>
             <destName>pareco-server-app.jar</destName>
         </file>
         <file>
-            <source>../parecoclient/target/pareco-client-app-${project.version}-spring-boot.jar</source>
-            <outputDirectory>parecoclient/</outputDirectory>
+            <source>../pareco-client/target/pareco-client-app-${project.version}-spring-boot.jar</source>
+            <outputDirectory>pareco-client/</outputDirectory>
             <destName>pareco-client-app.jar</destName>
         </file>
         <file>
-            <source>../parecoclientrunner/target/pareco-client-runner-app-${project.version}-spring-boot.jar</source>
-            <outputDirectory>parecoclientrunner/</outputDirectory>
+            <source>../pareco-client-runner/target/pareco-client-runner-app-${project.version}-spring-boot.jar</source>
+            <outputDirectory>pareco-client-runner/</outputDirectory>
             <destName>pareco-client-runner-app.jar</destName>
         </file>
         <file>

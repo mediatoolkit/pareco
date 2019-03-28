@@ -1,9 +1,9 @@
 #fast image creation which avoids downloading all maven dependencies each time
 #steps which are neded to execute before building an image:
 #    mvn clean install
-#    cd parecodistribution
+#    cd pareco-distribution
 #    ./prepareBuild.sh
 #    cd -
 FROM java:8-jre-alpine
-COPY parecodistribution/target/pareco-distribution-bin .
+COPY pareco-distribution/target/pareco-distribution-bin .
 ENTRYPOINT ["/bin/sh"]
