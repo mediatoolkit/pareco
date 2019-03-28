@@ -66,7 +66,9 @@ and, more conveniently, in uncompressed directory
 
 ## Docker
 
-see documentation [here](README-DOCKER.md)
+see build/run documentation [here](README-DOCKER.md)
+
+or, use docker image releases from [docker hub](https://hub.docker.com/r/mediatoolkit/pareco)
 
 ## Basic usage example
 
